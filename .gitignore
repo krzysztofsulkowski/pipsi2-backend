@@ -380,6 +380,10 @@ slnx.sqlite
 *.csproj.nuget.g.props
 *.csproj.nuget.g.targets
 *.project.assets.json
+*.assemblyReference.cache
+*.generatedMSBuildEditorConfig.editorconfig
+*.dswa.cache.json
+*.nuget.cache
 
 **/bin/Debug/
 **/bin/Release/
