@@ -362,12 +362,32 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-
-# Pliki generowane przez IDE / bazy danych podręczne
 *.db-wal
 *.db-shm
-semanticsymbols.db
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+semanticsymbols.db*
+codechunks.db*
+slnx.sqlite
 
 # Pliki generowane przez proces budowania .NET (MSBuild)
 *.assemblyinfo.cs
 *.assemblyinfoinputs.cache
+*.assemblyinfooutputs.cache
+*.assets.cache
+*.csproj.nuget.dgspec.json
+*.csproj.nuget.g.props
+*.csproj.nuget.g.targets
+*.project.assets.json
+
+**/bin/Debug/
+**/bin/Release/
+**/bin/net*/
+**/obj/*/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
