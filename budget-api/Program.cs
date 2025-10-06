@@ -1,5 +1,20 @@
+using budget_api.Models;
+using Microsoft.EntityFrameworkCore;
+
+
+
+DotNetEnv.Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = builder.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection_LOCAL");
+}
+
+builder.Services.AddDbContext<BudgetApiDbContext>(options =>
+    options.UseNpgsql(connectionString));
 // Add services to the container.
 
 builder.Services.AddControllers();
