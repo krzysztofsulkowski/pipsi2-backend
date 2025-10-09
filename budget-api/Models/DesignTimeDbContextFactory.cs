@@ -22,15 +22,14 @@ namespace budget_api.Models
 
             var builder = new DbContextOptionsBuilder<BudgetApiDbContext>();
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                connectionString = configuration.GetValue<string>("ConnectionStrings:DefaultConnection_LOCAL");
-            }
+            var connectionString = configuration.GetConnectionString("DefaultConnection_LOCAL");
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException("Could not find a connection string. Ensure it is set in appsettings.json, appsettings.Development.json, or an .env file.");
+                throw new InvalidOperationException(
+                    "Nie można odnaleźć connection stringa 'DefaultConnection_LOCAL' dla narzędzi Design-Time. " +
+                    "Upewnij się, że jest on zdefiniowany w pliku .env."
+                );
             }
 
             builder.UseNpgsql(connectionString);

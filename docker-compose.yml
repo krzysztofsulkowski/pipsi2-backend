@@ -4,14 +4,14 @@ networks:
     
 services:
   db:
-    container_name: postgres
-    image: postgres
+    container_name: budget-postgres
+    image: postgres:17
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U ${POSTGRES_USER} -h localhost -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL","pg_isready -U ${POSTGRES_USER} -h db -d ${POSTGRES_DB}"]
       interval: 10s
       retries: 5
       start_period: 30s
@@ -26,15 +26,14 @@ services:
 
 
   budget-api:
-    container_name: budgetapi
+    container_name: budget-app
     depends_on:
       db:
         condition: service_healthy
     env_file:
       - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-      - ConnectionStrings__Database=User ID=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Host=db;Port=5432;Database=${POSTGRES_DB};Pooling=true;
+      - IS_IN_CONTAINER=true
     image: ${DOCKER_REGISTRY-}budgetapi
     build:
       context: .

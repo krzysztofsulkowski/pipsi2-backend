@@ -5,16 +5,35 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+const string envFileName = ".env";
+var currentDirectory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+string envFilePath = null;
+while (currentDirectory != null && !File.Exists(envFilePath = Path.Combine(currentDirectory.FullName, envFileName)))
+{
+    currentDirectory = currentDirectory.Parent;
+}
 
-
-DotNetEnv.Env.Load();   //wczytuje zmienne z pliku .env
+if (envFilePath != null && File.Exists(envFilePath))
+{
+    DotNetEnv.Env.Load(envFilePath);  //wczytuje zmienne z pliku .env
+}
+else
+{
+    Console.WriteLine("OSTRZE¯ENIE: Nie znaleziono pliku .env.");
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrEmpty(connectionString))
+string connectionString;
+if (builder.Configuration.GetValue<bool>("IS_IN_CONTAINER"))
 {
-    connectionString = builder.Configuration.GetValue<string>("ConnectionStrings:DefaultConnection_LOCAL");
+    // Uruchomienie w kontenerze Docker (lub na produkcji)
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
+else
+{    
+    // Uruchomienie lokalne z Visual Studio
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection_LOCAL");
 }
 
 builder.Services.AddDbContext<BudgetApiDbContext>(options =>
@@ -28,7 +47,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequiredLength = 8;
     options.Password.RequireUppercase = true;
 })
-    .AddEntityFrameworkStores<BudgetApiDbContext>() 
+    .AddEntityFrameworkStores<BudgetApiDbContext>()
     .AddDefaultTokenProviders();
 
 // Konfiguracja uwierzytelniania oparta o JWT (tokeny)
