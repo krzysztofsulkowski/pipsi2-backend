@@ -31,7 +31,7 @@ if (builder.Configuration.GetValue<bool>("IS_IN_CONTAINER"))
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 }
 else
-{    
+{
     // Uruchomienie lokalne z Visual Studio
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection_LOCAL");
 }
@@ -105,4 +105,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<BudgetApiDbContext>();
+    ctx.Database.Migrate();
+
+    //var seedManager = scope.ServiceProvider.GetRequiredService<SeedManager>();
+    //await seedManager.Seed();
+}
 app.Run();
+
