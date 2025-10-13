@@ -2,6 +2,7 @@ services:
   budget-api:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - IS_IN_CONTAINER=true
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
     ports:
