@@ -1,10 +1,12 @@
 using budget_api.Models;
+using budget_api.Seeders;
+using budget_api.Services;
+using budget_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using budget_api.Seeders;
 
 const string envFileName = ".env";
 var currentDirectory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
@@ -86,6 +88,7 @@ builder.Services.AddCors(options =>
 // Add services to the container
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<SeedManager>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
