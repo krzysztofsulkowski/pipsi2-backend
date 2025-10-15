@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using budget_api.Seeders;
 
 const string envFileName = ".env";
 var currentDirectory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
@@ -82,7 +83,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add services to the container.
+// Add services to the container
+builder.Services.AddScoped<RoleSeeder>();
+builder.Services.AddScoped<SeedManager>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -110,8 +113,8 @@ using (var scope = app.Services.CreateScope())
     var ctx = scope.ServiceProvider.GetRequiredService<BudgetApiDbContext>();
     ctx.Database.Migrate();
 
-    //var seedManager = scope.ServiceProvider.GetRequiredService<SeedManager>();
-    //await seedManager.Seed();
+    var seedManager = scope.ServiceProvider.GetRequiredService<SeedManager>();
+    await seedManager.Seed();
 }
 app.Run();
 
