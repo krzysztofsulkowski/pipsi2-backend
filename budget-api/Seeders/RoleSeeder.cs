@@ -13,7 +13,7 @@ namespace budget_api.Seeders
 
         public async Task SeedRolesAsync()
         {
-            var roleNames = new[] { "Admin", "User" };
+            var roleNames = new[] { "Administrator", "User" };
             foreach (var roleName in roleNames)
             {
                 var roleExists = await _roleManager.RoleExistsAsync(roleName);
