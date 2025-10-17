@@ -9,5 +9,6 @@ namespace budget_api.Services.Interfaces
         Task<ServiceResult<LoginResponse>> Login(LoginDto loginDto);
         Task<ServiceResult> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto);
         Task<ServiceResult> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
+        Task<ServiceResult<LoginResponse>> HandleExternalLoginAsync();
     }
 }
