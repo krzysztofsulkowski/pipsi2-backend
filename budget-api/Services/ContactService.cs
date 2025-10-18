@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity.UI.Services;
-using budget_api.Models;
+﻿using budget_api.Models;
 using budget_api.Models.ViewModel;
+using budget_api.Services.Results;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace budget_api.Services
 {
@@ -23,7 +24,7 @@ namespace budget_api.Services
             _configuration = configuration;
         }
 
-        public async Task<bool> SubmitMessage(ContactMessageViewModel message)
+        public async Task<ServiceResult> SubmitMessage(ContactMessageViewModel message)
         {
             try
             {
@@ -57,12 +58,12 @@ namespace budget_api.Services
 
                 await _emailSender.SendEmailAsync(message.Email, confirmationSubject, confirmationBody);
 
-                return true;
+                return ServiceResult.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas wysyłania wiadomości kontaktowej");
-                return false;
+                return ServiceResult.Failure("Wystąpił błąd podczas wysyłania wiadomości. Spróbuj ponownie później.");
             }
         }
     }
