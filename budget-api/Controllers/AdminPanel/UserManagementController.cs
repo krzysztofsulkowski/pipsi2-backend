@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using budget_api.Models;
 using budget_api.Models.Dto;
 using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity;
@@ -32,21 +31,21 @@ namespace budget_api.Controllers.Admin
         //}
 
         [HttpPost("GetAllUsers")]
-        public async Task<IActionResult> GetAllUsers([FromForm] DataTableRequest request)
+        public async Task<IActionResult> GetAllUsers([FromBody] DataTableRequest request)
         {
             var serviceResponse = await _userManagementService.GetAllUsers(request);
             return HandleStatusCodeServiceResult(serviceResponse);
         }
 
         [HttpPost("CreateUser")]
-        public async Task<IActionResult> CreateUser([FromForm] UserDto user)
+        public async Task<IActionResult> CreateUser([FromBody] UserDto user)
         {
             var result = await _userManagementService.CreateUser(user);
             return HandleStatusCodeServiceResult(result);
         }
 
         [HttpPost("UpdateUser")]
-        public async Task<IActionResult> UpdateUser([FromForm] UserDto user)
+        public async Task<IActionResult> UpdateUser([FromBody] UserDto user)
         {
             var result = await _userManagementService.UpdateUser(user);
             return HandleServiceResult(result);
