@@ -14,8 +14,7 @@ namespace budget_api.Controllers
             _contactService = contactService;
         }
 
-        [HttpPost]
-        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("SubmitMessage")]
         public async Task<IActionResult> SubmitMessage([FromBody] ContactMessageViewModel msg)
         {
             var result = await _contactService.SubmitMessage(msg);

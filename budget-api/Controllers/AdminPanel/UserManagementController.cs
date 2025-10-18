@@ -4,8 +4,6 @@ using budget_api.Services.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Sprache;
 using System.Security.Claims;
 
 namespace budget_api.Controllers.Admin
@@ -23,7 +21,6 @@ namespace budget_api.Controllers.Admin
         }
 
         [HttpGet("Roles")]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> GetAllRoles()
         {
             var result = await _userManagementService.GetAllRolesAsync();
@@ -52,7 +49,6 @@ namespace budget_api.Controllers.Admin
         }
 
         [HttpPost("LockUser/{userId}")]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> LockUser([FromRoute] string userId)
         {
             if (string.IsNullOrEmpty(userId))
@@ -71,7 +67,6 @@ namespace budget_api.Controllers.Admin
         }
 
         [HttpPost("UnlockUser/{userId}")]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> UnlockUser([FromRoute] string userId)
         {
             if (string.IsNullOrEmpty(userId))
