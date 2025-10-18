@@ -17,5 +17,4 @@ namespace budget_api.Models.Dto
         public bool IsLocked { get; set; }
         public List<IdentityRole> AvailableRoles { get; set; } = new List<IdentityRole>();
     }
-
 }

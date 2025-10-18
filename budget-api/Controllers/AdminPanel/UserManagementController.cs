@@ -38,9 +38,9 @@ namespace budget_api.Controllers.Admin
         }
 
         [HttpPost("CreateUser")]
-        public async Task<IActionResult> CreateUser([FromBody] UserDto user)
+        public async Task<IActionResult> CreateUser([FromBody] UserDto userDto)
         {
-            var result = await _userManagementService.CreateUser(user);
+            var result = await _userManagementService.CreateUser(userDto, User);
             return HandleStatusCodeServiceResult(result);
         }
 

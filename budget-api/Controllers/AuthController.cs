@@ -26,15 +26,6 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        [HttpPost("create-admin-user")]
-        [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> CreateAdminUser([FromBody] RegisterDto registerDto)
-        {
-            var result = await _authService.RegisterAsync(registerDto, isAdmin: true);
-            return HandleServiceResult(result);
-        }
-
-
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {

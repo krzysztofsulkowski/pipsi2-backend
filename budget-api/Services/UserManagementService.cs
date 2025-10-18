@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using budget_api.Models;
 using budget_api.Models.Dto;
-using budget_api.Models;
-using budget_api.Services.Results;
 using budget_api.Services.Interfaces;
+using budget_api.Services.Results;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace budget_api.Services
 {
@@ -92,7 +93,7 @@ namespace budget_api.Services
             }
         }
 
-        public async Task<ServiceResult<UserDto>> CreateUser(UserDto user)
+        public async Task<ServiceResult<UserDto>> CreateUser(UserDto user, ClaimsPrincipal currentUser)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -107,6 +108,15 @@ namespace budget_api.Services
 
                 if (string.IsNullOrEmpty(role.Name))
                     return ServiceResult<UserDto>.Failure($"Role with ID {user.RoleId} has no name specified");
+
+                if (role.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!currentUser.IsInRole("Administrator"))
+                    {
+                        _logger.LogWarning("Użytkownik {UserName} bez uprawnień próbował utworzyć konto administratora.", currentUser.Identity.Name);
+                        return ServiceResult<UserDto>.Failure("Brak uprawnień. Tylko administratorzy mogą tworzyć konta innych administratorów.");
+                    }
+                }
 
                 var newUser = new IdentityUser
                 {
