@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using budget_api.Models.Dto;
-using budget_api.Services.Results;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
+﻿using budget_api.Models.Dto;
 using budget_api.Services.Interfaces;
+using budget_api.Services.Results;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Sprache;
+using System.Security.Claims;
 
 namespace budget_api.Controllers.Admin
 {
@@ -14,21 +16,19 @@ namespace budget_api.Controllers.Admin
     public class UserManagementController : BudgetApiBaseController
     {
         private readonly IUserManagementService _userManagementService;
-        private readonly RoleManager<IdentityRole> _roleManager;
-
-        public UserManagementController(IUserManagementService userManagementService, RoleManager<IdentityRole> roleManager)
+        
+        public UserManagementController(IUserManagementService userManagementService)
         {
             _userManagementService = userManagementService;
-            _roleManager = roleManager;
         }
 
-        //[HttpGet("Roles")]
-        //[ApiExplorerSettings(IgnoreApi = true)]
-        //public async Task<IActionResult> GetAllRoles()
-        //{
-        //    var roles = await _roleManager.Roles.ToListAsync();
-        //    return HandleServiceResult(roles);
-        //}
+        [HttpGet("Roles")]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<IActionResult> GetAllRoles()
+        {
+            var result = await _userManagementService.GetAllRolesAsync();
+            return HandleStatusCodeServiceResult(result);
+        }
 
         [HttpPost("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers([FromBody] DataTableRequest request)

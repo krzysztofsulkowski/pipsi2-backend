@@ -13,12 +13,29 @@ namespace budget_api.Services
         private readonly BudgetApiDbContext _context;
         private readonly ILogger<UserManagementService> _logger;
         private readonly UserManager<IdentityUser> _userManager;
-        public UserManagementService(BudgetApiDbContext context, ILogger<UserManagementService> logger, UserManager<IdentityUser> userManager)
+        private readonly RoleManager<IdentityRole> _roleManager;
+        public UserManagementService(BudgetApiDbContext context, ILogger<UserManagementService> logger, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
+            _roleManager = roleManager;
         }
+
+        public async Task<ServiceResult<List<IdentityRole>>> GetAllRolesAsync()
+        {
+            try
+            {
+                var roles = await _roleManager.Roles.ToListAsync();
+                return ServiceResult<List<IdentityRole>>.Success(roles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Wystąpił błąd podczas pobierania ról.");
+                return ServiceResult<List<IdentityRole>>.Failure("Wystąpił błąd serwera podczas pobierania ról.");
+            }
+        }
+
         public async Task<ServiceResult<DataTableResponse<UserDto>>> GetAllUsers(DataTableRequest request)
         {
             try

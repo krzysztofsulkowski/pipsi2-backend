@@ -1,5 +1,6 @@
 ﻿using budget_api.Models.Dto;
 using budget_api.Services.Results;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace budget_api.Services.Interfaces
@@ -12,5 +13,6 @@ namespace budget_api.Services.Interfaces
         Task<ServiceResult<UserDto>> CreateUser(UserDto user, ClaimsPrincipal currentUser);
         Task<ServiceResult> UpdateUser(UserDto model);
         Task<ServiceResult<UserDto>> GetUserById(string userId);
+        Task<ServiceResult<List<IdentityRole>>> GetAllRolesAsync();
     }
 }
