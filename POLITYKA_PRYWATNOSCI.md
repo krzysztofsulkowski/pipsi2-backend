@@ -1,1 +1,1 @@
-
+# Polityka Prywatności (Wersja Tymczasowa)
