@@ -98,7 +98,7 @@ builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<SeedManager>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
-builder.Services.AddScoped<ContactService>();
+builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, EmailSender>();
 
 builder.Services.AddControllers();
