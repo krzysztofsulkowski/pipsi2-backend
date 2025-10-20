@@ -6,6 +6,6 @@ namespace budget_api.Services.Interfaces
     public interface IEmailService
     {
         Task<ServiceResult> SendContactMessageToAdminAsync(ContactMessageViewModel message);
-        Task<string?> SendInvitationAsync(string? senderName, string budgetName, string invitationUrl);
+        Task<ServiceResult> SendBudgetInvitationAsync(string senderName, string recipientEmail, string budgetName, string invitationUrl);
     }
 }
