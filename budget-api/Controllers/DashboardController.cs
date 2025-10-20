@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace budget_api.Controllers
 {
+    [ApiController]
+    [Route("api/dashboard")]
     public class DashboardController : BudgetApiBaseController
     {
         private readonly IEmailService _emailService;
@@ -16,13 +18,12 @@ namespace budget_api.Controllers
             _logger = logger;
         }
 
-        [HttpPost("SubmitMessage")]
+        [HttpPost("submitMessage")]
         public async Task<IActionResult> SubmitMessage([FromBody] ContactMessageViewModel msg)
         {
             try
             {
                 await _emailService.SendContactMessageToAdminAsync(msg);
-                await _emailService.SendContactConfirmationToUserAsync(msg);
 
                 return HandleServiceResult(ServiceResult.Success());
             }
@@ -36,3 +37,4 @@ namespace budget_api.Controllers
         }
     }
 }
+
