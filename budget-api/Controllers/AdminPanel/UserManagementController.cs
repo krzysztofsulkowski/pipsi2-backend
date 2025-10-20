@@ -2,7 +2,6 @@
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -10,7 +9,8 @@ namespace budget_api.Controllers.Admin
 {
     [ApiController]
     [Authorize(Roles = "Administrator")]
-    [Route("AdminPanel/Users")]
+    [Route("api/adminPanel/Uuers")]
+
     public class UserManagementController : BudgetApiBaseController
     {
         private readonly IUserManagementService _userManagementService;
@@ -20,35 +20,35 @@ namespace budget_api.Controllers.Admin
             _userManagementService = userManagementService;
         }
 
-        [HttpGet("Roles")]
+        [HttpGet("roles")]
         public async Task<IActionResult> GetAllRoles()
         {
             var result = await _userManagementService.GetAllRolesAsync();
             return HandleStatusCodeServiceResult(result);
         }
 
-        [HttpPost("GetAllUsers")]
+        [HttpPost("getAllUsers")]
         public async Task<IActionResult> GetAllUsers([FromBody] DataTableRequest request)
         {
             var serviceResponse = await _userManagementService.GetAllUsers(request);
             return HandleStatusCodeServiceResult(serviceResponse);
         }
 
-        [HttpPost("CreateUser")]
+        [HttpPost("createUser")]
         public async Task<IActionResult> CreateUser([FromBody] UserDto userDto)
         {
             var result = await _userManagementService.CreateUser(userDto, User);
             return HandleStatusCodeServiceResult(result);
         }
 
-        [HttpPost("UpdateUser")]
+        [HttpPost("updateUser")]
         public async Task<IActionResult> UpdateUser([FromBody] UserDto user)
         {
             var result = await _userManagementService.UpdateUser(user);
             return HandleServiceResult(result);
         }
 
-        [HttpPost("LockUser/{userId}")]
+        [HttpPost("lockUser/{userId}")]
         public async Task<IActionResult> LockUser([FromRoute] string userId)
         {
             if (string.IsNullOrEmpty(userId))
@@ -66,7 +66,7 @@ namespace budget_api.Controllers.Admin
             return HandleServiceResult(result);
         }
 
-        [HttpPost("UnlockUser/{userId}")]
+        [HttpPost("unlockUser/{userId}")]
         public async Task<IActionResult> UnlockUser([FromRoute] string userId)
         {
             if (string.IsNullOrEmpty(userId))
@@ -78,7 +78,7 @@ namespace budget_api.Controllers.Admin
             return HandleServiceResult(result);
         }
 
-        [HttpGet("GetUserById")]
+        [HttpGet("getUserById")]
         public async Task<IActionResult> GetUserById(string userId)
         {
             if (string.IsNullOrEmpty(userId))
