@@ -38,6 +38,12 @@ namespace budget_api.Services
                 return ServiceResult.Failure("User already exists!");
             }
 
+            var userByUsername = await _userManager.FindByNameAsync(registerDto.Username);
+            if (userByUsername != null)
+            {
+                return ServiceResult.Failure("Ta nazwa Uzytkownika jest już zajęta");
+            }
+
             var user = new IdentityUser
             {
                 Email = registerDto.Email,
@@ -269,3 +275,6 @@ namespace budget_api.Services
         }
     }
 }
+
+
+
