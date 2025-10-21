@@ -28,4 +28,10 @@
 	 <PackageReference Include="DotNetEnv" Version="3.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Templates\SharedBudgetInvitationTemplate.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

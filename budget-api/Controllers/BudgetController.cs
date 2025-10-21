@@ -72,11 +72,7 @@ namespace budget_api.Controllers
         public async Task<IActionResult> AcceptInvitation([FromQuery] Guid token)
         {
             var result = await _budgetService.AcceptInvitationAsync(token);
-            if (!result.IsSuccess)
-            {
-                return BadRequest();
-            }
-            return Ok(new { message = "Zaproszenie zaakceptowane!" });
+            return HandleServiceResult(result);
         }
 
 
