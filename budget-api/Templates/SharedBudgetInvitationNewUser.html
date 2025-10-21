@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* CSS pozostaje bez zmian - stylistyka jest spójna */
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2E8B57;
+            text-align: center;
+        }
+
+        p {
+            font-size: 16px;
+        }
+
+        strong {
+            color: #2E8B57;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .button {
+            background-color: #2E8B57;
+            color: #ffffff;
+            padding: 15px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <h1>Jesteś o krok od dołączenia!</h1>
+        <p>Witaj!</p>
+        <p>Użytkownik <strong>{InviterName}</strong> zaprasza Cię do dołączenia do wspólnego budżetu o nazwie <strong>{BudgetName}</strong>.</p>
+
+        <p><strong>Aby zaakceptować to zaproszenie, musisz najpierw utworzyć darmowe konto w serwisie Balancer.</strong></p>
+        <p>Kliknij poniższy przycisk, aby przejść do strony rejestracji. Po pomyślnym założeniu konta, Twoje zaproszenie zostanie automatycznie aktywowane.</p>
+
+        <div class='button-container'>
+            <a href='{InvitationUrl}' class='button'>Zarejestruj się i dołącz do budżetu</a>
+        </div>
+
+        <p>Jeśli nie spodziewałeś/aś się tego zaproszenia, możesz bezpiecznie zignorować tę wiadomość.</p>
+        <p>Pozdrawiamy,<br>Zespół Balancer</p>
+
+        <div class='footer'>
+            <p>To jest automatyczna wiadomość, prosimy na nią nie odpowiadać.</p>
+        </div>
+    </div>
+</body>
+</html>
+
