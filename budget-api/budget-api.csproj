@@ -29,7 +29,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Templates\SharedBudgetInvitationTemplate.html">
+    <None Update="Templates\ForgotPasswordEmail.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\SharedBudgetInvitationExistingUser.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\SharedBudgetInvitationNewUser.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
