@@ -1,11 +1,14 @@
-﻿using budget_api.Services.Interfaces;
+﻿using budget_api.Models.ViewModel;
+using budget_api.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using budget_api.Models.ViewModel;
+using budget_api.Services.Errors;
 
 namespace budget_api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/budget")]
     public class BudgetController : BudgetApiBaseController
     {
@@ -46,7 +49,7 @@ namespace budget_api.Controllers
                 var invitationUrl = Url.Action(
                    "AcceptInvitation",
                    "Budget",
-                   new { token = invitationResult.Data.Token },
+                   new { token = invitationResult.Data.Invitation.Token },
                    Request.Scheme
                );
 
@@ -57,7 +60,7 @@ namespace budget_api.Controllers
                 }
 
                 string senderName = User.Identity?.Name ?? "Twój znajomy";
-                var emailResult = await _emailService.SendBudgetInvitationAsync(senderName, model.RecipientEmail, model.BudgetName, invitationUrl);
+                var emailResult = await _emailService.SendBudgetInvitationAsync(senderName, model.RecipientEmail, model.BudgetName, invitationUrl, invitationResult.Data.UserExistsInSystem);
 
                 return HandleServiceResult(emailResult);
             }
@@ -69,14 +72,28 @@ namespace budget_api.Controllers
         }
 
         [HttpGet("acceptInvitation")]
+        [AllowAnonymous]
         public async Task<IActionResult> AcceptInvitation([FromQuery] Guid token)
         {
+            if (token == Guid.Empty)
+            {
+                return BadRequest(new { message = "Nieprawidłowy token." });
+            }
             var result = await _budgetService.AcceptInvitationAsync(token);
             if (!result.IsSuccess)
             {
-                return BadRequest();
+                var registrationError = InvitationError.UserRegistrationRequiredError();
+                if (result.Error.Code == registrationError.Code)
+                {
+                    return StatusCode(401, new
+                    {
+                        actionRequired = "register",
+                        message = result.Error.Description,
+                        invitationToken = token
+                    });
+                }
             }
-            return Ok(new { message = "Zaproszenie zaakceptowane!" });
+            return HandleServiceResult(result);
         }
 
 
@@ -109,6 +126,3 @@ namespace budget_api.Controllers
         }
     }
 }
-
-
-

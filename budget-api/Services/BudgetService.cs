@@ -1,10 +1,12 @@
 ﻿using budget_api.Models;
 using budget_api.Models.DatabaseModels;
+using budget_api.Models.Dto;
 using budget_api.Models.ViewModel;
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using budget_api.Services.Errors;
 
 namespace budget_api.Services
 {
@@ -81,6 +83,7 @@ namespace budget_api.Services
 
         public async Task<ServiceResult> AcceptInvitationAsync(Guid token)
         {
+
             var invitation = await _context.BudgetInvitations
                 .FirstOrDefaultAsync(i => i.Token == token && i.Status == InvitationStatus.Pending);
 
@@ -100,7 +103,7 @@ namespace budget_api.Services
 
             if (user == null)
             {
-                return ServiceResult.Failure($"Aby zaakceptować zaproszenie, najpierw załóż konto z adresem e-mail: {invitation.InvitedUserEmail}");
+                return ServiceResult.Failure(InvitationError.UserRegistrationRequiredError());
             }
 
             var isAlreadyMember = await _context.UserBudgets
@@ -130,7 +133,7 @@ namespace budget_api.Services
         }
 
 
-        public async Task<ServiceResult<BudgetInvitation>> CreateInvitationAsync(int budgetId, string recipientEmail, string inviterUserId)
+        public async Task<ServiceResult<InvitationResultData>> CreateInvitationAsync(int budgetId, string recipientEmail, string inviterUserId)
         {
             try
             {
@@ -140,7 +143,7 @@ namespace budget_api.Services
                 if (!hasAccess)
                 {
                     _logger.LogWarning("Użytkownik {InviterId} próbował wysłać zaproszenie do budżetu {BudgetId}, do którego nie ma dostępu.", inviterUserId, budgetId);
-                    return ServiceResult<BudgetInvitation>.Failure("Brak uprawnień do zapraszania do tego budżetu.");
+                    return ServiceResult<InvitationResultData>.Failure("Brak uprawnień do zapraszania do tego budżetu.");
                 }
 
                 var invitedUser = await _userManager.FindByEmailAsync(recipientEmail);
@@ -150,7 +153,7 @@ namespace budget_api.Services
                         .AnyAsync(ub => ub.BudgetId == budgetId && ub.UserId == invitedUser.Id);
                     if (isAlreadyMember)
                     {
-                        return ServiceResult<BudgetInvitation>.Failure("Ten użytkownik jest już członkiem tego budżetu.");
+                        return ServiceResult<InvitationResultData>.Failure("Ten użytkownik jest już członkiem tego budżetu.");
                     }
                 }
 
@@ -169,12 +172,18 @@ namespace budget_api.Services
 
                 _logger.LogInformation("Utworzono nowe zaproszenie (ID: {InvitationId}) do budżetu {BudgetId} dla {Email}.", invitation.Id, budgetId, recipientEmail);
 
-                return ServiceResult<BudgetInvitation>.Success(invitation);
+                var resultData = new InvitationResultData
+                {
+                    Invitation = invitation,
+                    UserExistsInSystem = (invitedUser != null)
+                };
+
+                return ServiceResult<InvitationResultData>.Success(resultData);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas tworzenia zaproszenia do budżetu {BudgetId} dla {Email}.", budgetId, recipientEmail);
-                return ServiceResult<BudgetInvitation>.Failure("Wystąpił nieoczekiwany błąd serwera.");
+                return ServiceResult<InvitationResultData>.Failure("Wystąpił nieoczekiwany błąd serwera.");
             }
         }
     }

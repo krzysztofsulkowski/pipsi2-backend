@@ -81,12 +81,16 @@ namespace budget_api.Services
         }
 
 
-        public async Task<ServiceResult> SendBudgetInvitationAsync(string senderName, string recipientEmail, string budgetName, string invitationUrl)
+        public async Task<ServiceResult> SendBudgetInvitationAsync(string senderName, string recipientEmail, string budgetName, string invitationUrl, bool userExists)
         {
             try
             {
                 string subject = $"{senderName} zaprasza Cię do wspólnego budżetu '{budgetName}'";
-                string? emailBody = await CreateInvitationBodyAsync(senderName, budgetName, invitationUrl);
+                string templateFileName = userExists
+                    ? "SharedBudgetInvitationExistingUser.html"
+                    : "SharedBudgetInvitationNewUser.html";
+
+                string? emailBody = await CreateInvitationBodyAsync(senderName, budgetName, invitationUrl, templateFileName);
 
                 if (emailBody == null)
                 {
@@ -105,9 +109,8 @@ namespace budget_api.Services
             }
         }
 
-        private async Task<string?> CreateInvitationBodyAsync(string? senderName, string budgetName, string invitationUrl)
+        private async Task<string?> CreateInvitationBodyAsync(string? senderName, string budgetName, string invitationUrl, string templateFileName)
         {
-            string templateFileName = "SharedBudgetInvitationTemplate.html";
             string templateDirectory = Path.Combine(AppContext.BaseDirectory, "Templates");
             string templatePath = Path.Combine(templateDirectory, templateFileName);
 
@@ -140,6 +143,3 @@ namespace budget_api.Services
         }
     }
 }
-
-
-
