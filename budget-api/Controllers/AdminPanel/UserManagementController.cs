@@ -9,7 +9,7 @@ namespace budget_api.Controllers.Admin
 {
     [ApiController]
     [Authorize(Roles = "Administrator")]
-    [Route("api/adminPanel/Uuers")]
+    [Route("api/adminPanel/users")]
 
     public class UserManagementController : BudgetApiBaseController
     {
