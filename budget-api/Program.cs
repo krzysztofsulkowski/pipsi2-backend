@@ -87,13 +87,13 @@ var frontendUrl = builder.Configuration["FRONTEND_BASE_URL"] ?? "http://localhos
 
 builder.Services.AddCors(options =>
 {
-options.AddDefaultPolicy(policy =>
-{
-    policy.WithOrigins(frontendUrl)
-          .AllowAnyHeader()
-          .AllowAnyMethod();
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(frontendUrl)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
-
 
 // Add services to the container
 builder.Services.AddScoped<RoleSeeder>();
