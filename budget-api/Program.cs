@@ -83,15 +83,17 @@ builder.Services.AddAuthentication(options =>
 });
 
 
+var frontendUrl = builder.Configuration["FRONTEND_BASE_URL"] ?? "http://localhost:3000";
+
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+options.AddDefaultPolicy(policy =>
+{
+    policy.WithOrigins(frontendUrl)
+          .AllowAnyHeader()
+          .AllowAnyMethod();
 });
+
 
 // Add services to the container
 builder.Services.AddScoped<RoleSeeder>();
