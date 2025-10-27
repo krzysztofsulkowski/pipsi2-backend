@@ -12,6 +12,7 @@ namespace budget_api.Models
         public DbSet<Budget> Budgets { get; set; }
         public DbSet<UserBudget> UserBudgets { get; set; }
         public DbSet<BudgetInvitation> BudgetInvitations { get; set; }
+        public DbSet<HistoryLog> HistoryLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -21,6 +22,10 @@ namespace budget_api.Models
 
             modelBuilder.Entity<UserBudget>()
                 .HasKey(ub => new { ub.UserId, ub.BudgetId });
+
+            modelBuilder.Entity<HistoryLog>()
+                .Property(h => h.CreationDate)
+                .HasColumnType("timestamp with time zone");
         }
     }
 }
