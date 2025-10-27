@@ -168,7 +168,8 @@ namespace budget_api.Services
             var frontEndBaseUrl = _configuration["FRONTEND_BASE_URL"];
             if (string.IsNullOrEmpty(frontEndBaseUrl))
             {
-                throw new InvalidOperationException("FrontEndBaseUrl nie jest skonfigurowany w appsettings.json");
+                Console.WriteLine("OSTRZEŻENIE: Brak konfiguracji FRONTEND_BASE_URL. Używam domyślnego adresu 'http://localhost:3000' do wygenerowania linku resetowania hasła.");
+                frontEndBaseUrl = "http://localhost:3000";
             }
 
             var encodedToken = WebUtility.UrlEncode(token);
