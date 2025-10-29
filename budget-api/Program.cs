@@ -29,17 +29,19 @@ else
 
 var builder = WebApplication.CreateBuilder(args);
 
-string connectionString;
+string rawConnectionString;
 if (builder.Configuration.GetValue<bool>("IS_IN_CONTAINER"))
 {
     // Uruchomienie w kontenerze Docker (lub na produkcji)
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 }
 else
 {
     // Uruchomienie lokalne z Visual Studio
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection_LOCAL");
+    rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection_LOCAL");
 }
+
+var connectionString = ConnectionStringConverter.Convert(rawConnectionString);
 
 builder.Services.AddDbContext<BudgetApiDbContext>(options =>
     options.UseNpgsql(connectionString));
