@@ -111,6 +111,30 @@ public class ApiTests
         Console.WriteLine("[Test 2] OK: Logowanie zakończone powodzeniem.");
     }
 
+    // Test 3: Forgot Password (POST /api/authentication/forgot-password)
+    [Test, Order(3)]
+    public async Task ForgotPassword_Should_Succeed()
+    {
+        Console.WriteLine("[Test 3] Start: Forgot Password");
+        var payload = new { email = _testUserEmail };
+
+        Console.WriteLine($"[Test 3] Endpoint: POST {_baseUrl}/api/authentication/forgot-password");
+        Console.WriteLine($"[Test 3] Payload: {JsonSerializer.Serialize(payload)}");
+
+        var response = await _request.PostAsync("/api/authentication/forgot-password",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var text = await response.TextAsync();
+
+        Console.WriteLine($"[Test 3] HTTP Status: {status}");
+        Console.WriteLine($"[Test 3] Body: {text}");
+
+        Assert.That(status, Is.InRange(200, 299), $"Forgot password failed: HTTP {status}\n{text}");
+        Console.WriteLine("[Test 3] OK: Forgot Password zakończone powodzeniem.");
+    }
+
+
 
 
     [OneTimeTearDown]
