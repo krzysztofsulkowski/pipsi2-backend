@@ -24,7 +24,7 @@ namespace budget_api.Controllers
         }
 
 
-        [HttpPost("sendInvitation")]
+        [HttpPost("send-invitation")]
         public async Task<IActionResult> SendInvitation([FromBody] SendInvitationViewModel model)
         {
             if (!ModelState.IsValid)
@@ -71,7 +71,7 @@ namespace budget_api.Controllers
             }
         }
 
-        [HttpGet("acceptInvitation")]
+        [HttpGet("accept-invitation")]
         [AllowAnonymous]
         public async Task<IActionResult> AcceptInvitation([FromQuery] Guid token)
         {

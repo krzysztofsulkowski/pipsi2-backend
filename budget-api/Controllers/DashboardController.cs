@@ -18,7 +18,7 @@ namespace budget_api.Controllers
             _logger = logger;
         }
 
-        [HttpPost("submitMessage")]
+        [HttpPost("submit-message")]
         public async Task<IActionResult> SubmitMessage([FromBody] ContactMessageViewModel msg)
         {
             try

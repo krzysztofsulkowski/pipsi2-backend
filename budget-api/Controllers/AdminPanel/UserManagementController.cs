@@ -27,28 +27,28 @@ namespace budget_api.Controllers.Admin
             return HandleStatusCodeServiceResult(result);
         }
 
-        [HttpPost("getAllUsers")]
+        [HttpPost("get-all-users")]
         public async Task<IActionResult> GetAllUsers([FromBody] DataTableRequest request)
         {
             var serviceResponse = await _userManagementService.GetAllUsers(request);
             return HandleStatusCodeServiceResult(serviceResponse);
         }
 
-        [HttpPost("createUser")]
+        [HttpPost("create-user")]
         public async Task<IActionResult> CreateUser([FromBody] UserDto userDto)
         {
             var result = await _userManagementService.CreateUser(userDto, User);
             return HandleStatusCodeServiceResult(result);
         }
 
-        [HttpPost("updateUser")]
+        [HttpPost("update-user")]
         public async Task<IActionResult> UpdateUser([FromBody] UserDto user)
         {
             var result = await _userManagementService.UpdateUser(user);
             return HandleServiceResult(result);
         }
 
-        [HttpPost("lockUser/{userId}")]
+        [HttpPost("lock-user/{userId}")]
         public async Task<IActionResult> LockUser([FromRoute] string userId)
         {
             if (string.IsNullOrEmpty(userId))
@@ -66,7 +66,7 @@ namespace budget_api.Controllers.Admin
             return HandleServiceResult(result);
         }
 
-        [HttpPost("unlockUser/{userId}")]
+        [HttpPost("unlock-user/{userId}")]
         public async Task<IActionResult> UnlockUser([FromRoute] string userId)
         {
             if (string.IsNullOrEmpty(userId))
@@ -78,7 +78,7 @@ namespace budget_api.Controllers.Admin
             return HandleServiceResult(result);
         }
 
-        [HttpGet("getUserById")]
+        [HttpGet("get-user-by-id")]
         public async Task<IActionResult> GetUserById(string userId)
         {
             if (string.IsNullOrEmpty(userId))

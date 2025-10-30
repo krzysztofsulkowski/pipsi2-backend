@@ -15,6 +15,7 @@ namespace budget_api.Services
         private readonly BudgetApiDbContext _context;
         private readonly ILogger<BudgetService> _logger;
         private readonly UserManager<IdentityUser> _userManager;
+        private const string ObjectName = "Budget";
 
         public BudgetService(BudgetApiDbContext context, ILogger<BudgetService> logger, UserManager<IdentityUser> userManager)
         {
@@ -50,7 +51,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Wystąpił błąd podczas tworzenia budżetu dla użytkownika {UserId}.", userId);
-                return ServiceResult.Failure("Wystąpił nieoczekiwany błąd podczas tworzenia budżetu.");
+                return ServiceResult.Failure(CommonErrors.CreateFailed(ObjectName));
             }
         }
 
@@ -64,7 +65,7 @@ namespace budget_api.Services
                 if (budget == null)
                 {
                     _logger.LogWarning("Użytkownik {UserId} próbował uzyskać dostęp do nieistniejącego lub niedozwolonego budżetu {BudgetId}.", userId, budgetId);
-                    return ServiceResult<BudgetViewModel>.Failure("Nie znaleziono budżetu lub brak uprawnień.");
+                    return ServiceResult<BudgetViewModel>.Failure(CommonErrors.NotFound(ObjectName, budgetId));
                 }
                 var budgetDto = new BudgetViewModel
                 {
@@ -77,7 +78,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Wystąpił błąd podczas pobierania budżetu {BudgetId} dla użytkownika {UserId}.", budgetId, userId);
-                return ServiceResult<BudgetViewModel>.Failure("Wystąpił błąd podczas pobierania danych budżetu.");
+                return ServiceResult<BudgetViewModel>.Failure(CommonErrors.FetchFailed(ObjectName));
             }
         }
 
@@ -89,14 +90,14 @@ namespace budget_api.Services
 
             if (invitation == null)
             {
-                return ServiceResult.Failure("Zaproszenie jest nieprawidłowe lub zostało już wykorzystane.");
+                return ServiceResult.Failure(InvitationError.InvalidOrUsedError());
             }
 
             if (invitation.ExpiresAt < DateTime.UtcNow)
             {
                 invitation.Status = InvitationStatus.Expired;
                 await _context.SaveChangesAsync();
-                return ServiceResult.Failure("Twoje zaproszenie wygasło.");
+                return ServiceResult.Failure(InvitationError.ExpiredError());
             }
 
             var user = await _userManager.FindByEmailAsync(invitation.InvitedUserEmail);
@@ -143,7 +144,7 @@ namespace budget_api.Services
                 if (!hasAccess)
                 {
                     _logger.LogWarning("Użytkownik {InviterId} próbował wysłać zaproszenie do budżetu {BudgetId}, do którego nie ma dostępu.", inviterUserId, budgetId);
-                    return ServiceResult<InvitationResultData>.Failure("Brak uprawnień do zapraszania do tego budżetu.");
+                    return ServiceResult<InvitationResultData>.Failure(InvitationError.PermissionDeniedError());
                 }
 
                 var invitedUser = await _userManager.FindByEmailAsync(recipientEmail);
@@ -153,7 +154,7 @@ namespace budget_api.Services
                         .AnyAsync(ub => ub.BudgetId == budgetId && ub.UserId == invitedUser.Id);
                     if (isAlreadyMember)
                     {
-                        return ServiceResult<InvitationResultData>.Failure("Ten użytkownik jest już członkiem tego budżetu.");
+                        return ServiceResult<InvitationResultData>.Failure(InvitationError.AlreadyMemberError());
                     }
                 }
 
@@ -183,7 +184,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas tworzenia zaproszenia do budżetu {BudgetId} dla {Email}.", budgetId, recipientEmail);
-                return ServiceResult<InvitationResultData>.Failure("Wystąpił nieoczekiwany błąd serwera.");
+                return ServiceResult<InvitationResultData>.Failure(CommonErrors.InternalServerError());
             }
         }
     }
