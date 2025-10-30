@@ -134,8 +134,33 @@ public class ApiTests
         Console.WriteLine("[Test 3] OK: Forgot Password zakończone powodzeniem.");
     }
 
+    // Test 4: Reset Password (bad token) (POST /api/authentication/reset-password) -> should return 400
+    [Test, Order(4)]
+    public async Task ResetPassword_Should_Return_400_For_InvalidToken()
+    {
+        Console.WriteLine("[Test 4] Start: Reset Password (invalid token)");
+        var payload = new
+        {
+            email = _testUserEmail,
+            token = "invalid-reset-token",
+            newPassword = "NewTest123!@#"
+        };
 
+        Console.WriteLine($"[Test 4] Endpoint: POST {_baseUrl}/api/authentication/reset-password");
+        Console.WriteLine($"[Test 4] Payload: {JsonSerializer.Serialize(payload)}");
 
+        var response = await _request.PostAsync("/api/authentication/reset-password",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var text = await response.TextAsync();
+
+        Console.WriteLine($"[Test 4] HTTP Status: {status}");
+        Console.WriteLine($"[Test 4] Body: {text}");
+
+        Assert.That(status, Is.EqualTo(400), $"Expected 400 for invalid token, got {status}\n{text}");
+        Console.WriteLine("[Test 4] OK: API poprawnie odrzuciło nieprawidłowy token.");
+    }
 
     [OneTimeTearDown]
     public async Task Teardown()
