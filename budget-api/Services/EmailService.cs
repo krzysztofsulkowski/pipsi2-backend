@@ -2,6 +2,7 @@
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using budget_api.Services.Errors;
 
 namespace budget_api.Services
 {
@@ -28,7 +29,7 @@ namespace budget_api.Services
                 if (string.IsNullOrEmpty(adminEmail))
                 {
                     _logger.LogError("Adres email administratora (EmailConfiguration:From) nie jest ustawiony w konfiguracji.");
-                    return ServiceResult.Failure("Błąd konfiguracji serwera. Nie można wysłać wiadomości.");
+                    return ServiceResult.Failure(EmailError.ConfigurationError());
                 }
 
                 string emailSubject = $"Nowa wiadomość kontaktowa: {subject}";
@@ -51,7 +52,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas wysyłania wiadomości kontaktowej");
-                return ServiceResult.Failure("Wystąpił błąd podczas wysyłania wiadomości. Spróbuj ponownie później.");
+                return ServiceResult.Failure(EmailError.SendFailed());
             }
         }
 
