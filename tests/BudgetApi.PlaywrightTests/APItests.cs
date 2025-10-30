@@ -14,6 +14,7 @@ public class ApiTests
     private const string HttpsUrl = $"https://localhost:{Port}";
     private const string HttpUrl = $"http://localhost:{Port}";
     private string _baseUrl = HttpsUrl;
+    private const string _testUserPassword = "Test123!@#";
 
     [OneTimeSetUp]
     public async Task Setup()
@@ -82,6 +83,35 @@ public class ApiTests
             Console.WriteLine("[Test 1] OK: Rejestracja zakończona powodzeniem (HTTP).");
         }
     }
+
+    // Test 2: Logowanie (POST /api/authentication/login)
+    [Test, Order(2)]
+    public async Task Login_Should_Succeed()
+    {
+        Console.WriteLine("[Test 2] Start: Logowanie użytkownika");
+        var payload = new
+        {
+            email = _testUserEmail,
+            password = _testUserPassword
+        };
+
+        Console.WriteLine($"[Test 2] Endpoint: POST {_baseUrl}/api/authentication/login");
+        Console.WriteLine($"[Test 2] Payload: {JsonSerializer.Serialize(payload)}");
+
+        var response = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var text = await response.TextAsync();
+
+        Console.WriteLine($"[Test 2] HTTP Status: {status}");
+        Console.WriteLine($"[Test 2] Body: {text}");
+
+        Assert.That(status, Is.InRange(200, 299), $"Login failed: HTTP {status}\n{text}");
+        Console.WriteLine("[Test 2] OK: Logowanie zakończone powodzeniem.");
+    }
+
+
 
     [OneTimeTearDown]
     public async Task Teardown()
