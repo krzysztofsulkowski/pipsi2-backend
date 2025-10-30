@@ -33,11 +33,11 @@ public class ApiTests
         Console.WriteLine($"[Setup] APIRequest context initialized. BaseURL={_baseUrl}");
     }
 
-    // Test 1: Rejestracja użytkownika (POST /api/authentication/register)
+    // Test 1: User registration (POST /api/authentication/register)
     [Test, Order(1)]
     public async Task Register_Should_Succeed()
     {
-        Console.WriteLine("[Test 1] Start: Rejestracja użytkownika");
+        Console.WriteLine("[Test 1] Start: User registration");
         var payload = new
         {
             email = _testUserEmail,
@@ -55,12 +55,12 @@ public class ApiTests
             Console.WriteLine($"[Test 1] HTTP Status: {s1}");
             Console.WriteLine($"[Test 1] Body: {b1}");
             Assert.That(s1, Is.InRange(200, 299), $"Registration failed: HTTP {s1}\n{b1}");
-            Console.WriteLine("[Test 1] OK: Rejestracja zakończona powodzeniem.");
+            Console.WriteLine("[Test 1] OK: Registration succeeded (HTTPS).");
         }
         catch (PlaywrightException ex)
         {
-            Console.WriteLine($"[Test 1] HTTPS failed: {ex.Message}");
-            Console.WriteLine("[Test 1] Retry na HTTP…");
+            Console.WriteLine($"[Test 1] HTTPS request failed: {ex.Message}");
+            Console.WriteLine("[Test 1] Retrying on HTTP...");
             await _request.DisposeAsync();
             _baseUrl = HttpUrl;
             _request = await _playwright.APIRequest.NewContextAsync(new()
@@ -73,22 +73,22 @@ public class ApiTests
                     { "Content-Type", "application/json" }
                 }
             });
-            Console.WriteLine($"[Test 1] Now BaseURL={_baseUrl}");
+            Console.WriteLine($"[Test 1] New BaseURL={_baseUrl}");
 
             var r2 = await _request.PostAsync("/api/authentication/register", new() { DataObject = payload });
             var s2 = r2.Status; var b2 = await r2.TextAsync();
             Console.WriteLine($"[Test 1] HTTP Status: {s2}");
             Console.WriteLine($"[Test 1] Body: {b2}");
             Assert.That(s2, Is.InRange(200, 299), $"Registration failed: HTTP {s2}\n{b2}");
-            Console.WriteLine("[Test 1] OK: Rejestracja zakończona powodzeniem (HTTP).");
+            Console.WriteLine("[Test 1] OK: Registration succeeded (HTTP).");
         }
     }
 
-    // Test 2: Logowanie (POST /api/authentication/login)
+    // Test 2: User login (POST /api/authentication/login)
     [Test, Order(2)]
     public async Task Login_Should_Succeed()
     {
-        Console.WriteLine("[Test 2] Start: Logowanie użytkownika");
+        Console.WriteLine("[Test 2] Start: User login");
         var payload = new
         {
             email = _testUserEmail,
@@ -108,7 +108,7 @@ public class ApiTests
         Console.WriteLine($"[Test 2] Body: {text}");
 
         Assert.That(status, Is.InRange(200, 299), $"Login failed: HTTP {status}\n{text}");
-        Console.WriteLine("[Test 2] OK: Logowanie zakończone powodzeniem.");
+        Console.WriteLine("[Test 2] OK: Login succeeded.");
     }
 
     // Test 3: Forgot Password (POST /api/authentication/forgot-password)
@@ -131,10 +131,10 @@ public class ApiTests
         Console.WriteLine($"[Test 3] Body: {text}");
 
         Assert.That(status, Is.InRange(200, 299), $"Forgot password failed: HTTP {status}\n{text}");
-        Console.WriteLine("[Test 3] OK: Forgot Password zakończone powodzeniem.");
+        Console.WriteLine("[Test 3] OK: Forgot Password succeeded.");
     }
 
-    // Test 4: Reset Password (bad token) (POST /api/authentication/reset-password) -> should return 400
+    // Test 4: Reset Password (invalid token) (POST /api/authentication/reset-password) -> should return 400
     [Test, Order(4)]
     public async Task ResetPassword_Should_Return_400_For_InvalidToken()
     {
@@ -159,7 +159,7 @@ public class ApiTests
         Console.WriteLine($"[Test 4] Body: {text}");
 
         Assert.That(status, Is.EqualTo(400), $"Expected 400 for invalid token, got {status}\n{text}");
-        Console.WriteLine("[Test 4] OK: API poprawnie odrzuciło nieprawidłowy token.");
+        Console.WriteLine("[Test 4] OK: API correctly rejected invalid token.");
     }
 
     [OneTimeTearDown]
