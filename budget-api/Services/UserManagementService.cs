@@ -5,6 +5,7 @@ using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using budget_api.Services.Errors;
 
 namespace budget_api.Services
 {
@@ -32,7 +33,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Wystąpił błąd podczas pobierania ról.");
-                return ServiceResult<List<IdentityRole>>.Failure("Wystąpił błąd serwera podczas pobierania ról.");
+                return ServiceResult<List<IdentityRole>>.Failure(CommonErrors.FetchFailed("Roles"));
             }
         }
 
@@ -63,7 +64,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching users with roles: {ErrorDetails}", ex.ToString());
-                return ServiceResult<DataTableResponse<UserDto>>.Failure($"Error fetching data: {ex.Message}");
+                return ServiceResult<DataTableResponse<UserDto>>.Failure(CommonErrors.DataProcessingError());
             }
         }
 
