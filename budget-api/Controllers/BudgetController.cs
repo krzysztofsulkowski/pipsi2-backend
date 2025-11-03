@@ -1,9 +1,10 @@
 ﻿using budget_api.Models.ViewModel;
+using budget_api.Services;
+using budget_api.Services.Errors;
 using budget_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using budget_api.Services.Errors;
 
 namespace budget_api.Controllers
 {
@@ -123,6 +124,59 @@ namespace budget_api.Controllers
             var result = await _budgetService.GetBudgetByIdAsync(budgetId, userId);
 
             return HandleStatusCodeServiceResult(result);
+        }
+
+        [HttpGet("my-budgets")]
+        public async Task<IActionResult> GetMyBudgets()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _budgetService.GetUserBudgetsAsync(userId);
+            return HandleStatusCodeServiceResult(result);
+        }
+
+        [HttpPost("{budgetId:int}/edit")]
+        public async Task<IActionResult> EditBudget([FromRoute] int budgetId, [FromBody] EditBudgetViewModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _budgetService.EditBudgetAsync(budgetId, model, userId);
+            return HandleServiceResult(result);
+        }
+
+        [HttpDelete("{budgetId:int}/members/{userId}")]
+        public async Task<IActionResult> RemoveMember([FromRoute] int budgetId, [FromRoute] string userId)
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+
+            var result = await _budgetService.RemoveMemberAsync(budgetId, userId, currentUserId);
+            return HandleServiceResult(result);
+        }
+
+
+        [HttpPost("{budgetId:int}/archive")]
+        public async Task<IActionResult> ArchiveBudget([FromRoute] int budgetId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _budgetService.ArchiveBudgetAsync(budgetId, userId);
+            return HandleServiceResult(result);
+        }
+
+        [HttpPost("{budgetId:int}/unarchive")]
+        public async Task<IActionResult> UnarchiveBudget([FromRoute] int budgetId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _budgetService.UnarchiveBudgetAsync(budgetId, userId);
+            return HandleServiceResult(result);
         }
     }
 }
