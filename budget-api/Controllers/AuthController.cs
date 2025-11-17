@@ -59,11 +59,19 @@ namespace budget_api.Controllers
 
         [HttpGet("external-login-callback")]
         [AllowAnonymous]
-        public async Task<IActionResult> ExternalLoginCallback()
+        public async Task<IActionResult> ExternalLoginCallback([FromQuery] string returnUrl = null)
         {
             var result = await _authService.HandleExternalLoginAsync();
 
-            return HandleStatusCodeServiceResult(result);
+            if (result == null || string.IsNullOrEmpty(result.Data?.Token))
+            {
+                var errorUrl = returnUrl ?? "http://localhost:3000/login"; 
+                return Redirect($"{errorUrl}?error=auth_failed");
+            }
+
+            var token = result.Data.Token;
+            var successUrl = $"{returnUrl}?token={token}";
+            return Redirect(successUrl);
         }
     }
 }
