@@ -41,5 +41,43 @@ services:
     networks:
       - dev
 
+  metabase:
+    image: metabase/metabase:latest
+    container_name: aflos-metabase-dev
+    hostname: metabase
+    ports:
+      - "3001:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabaseappdb
+      MB_DB_PORT: 5432
+      MB_DB_USER: metabase
+      MB_DB_PASS: metabase_dev_password
+      MB_DB_HOST: metabase_db 
+    depends_on:
+      - metabase_db
+    networks:
+      - dev
+    restart: unless-stopped
+
+  metabase_db:
+    image: postgres:15
+    container_name: aflos-metabase-db-dev
+    hostname: metabase_db
+    environment:
+      POSTGRES_USER: metabase
+      POSTGRES_DB: metabaseappdb
+      POSTGRES_PASSWORD: metabase_dev_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dev
+    restart: unless-stopped
+
+
 volumes:
   db-data: {}
+  metabase_data: {}
+  postgres_data: {}
