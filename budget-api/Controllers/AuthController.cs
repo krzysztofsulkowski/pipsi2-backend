@@ -30,7 +30,7 @@ namespace budget_api.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             var result = await _authService.Login(loginDto);
-            return HandleStatusCodeServiceResult(result);
+            return HandleServiceResult(result);
         }
 
 
