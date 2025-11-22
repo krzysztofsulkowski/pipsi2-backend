@@ -395,3 +395,6 @@ slnx.sqlite
 .env.local
 .env.development
 .env.production
+
+# Local appsettings
+appsettings.Local.json
