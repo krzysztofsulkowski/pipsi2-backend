@@ -1,34 +1,39 @@
 ﻿using Microsoft.AspNetCore.Identity.UI.Services;
-using System.Net;
+using Microsoft.Extensions.Configuration;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 using System.Net.Mail;
 
 namespace budget_api.Services
 {
     public class EmailSender : IEmailSender
     {
-        public IConfiguration config { get; }
+        private readonly IConfiguration _config;
+
         public EmailSender(IConfiguration config)
         {
-            this.config = config;
+            _config = config;
         }
+
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            using (MailMessage mailMessage = new MailMessage(config["EmailConfiguration:From"], email))
-            {
-                mailMessage.Subject = subject;
-                mailMessage.Body = htmlMessage;
-                mailMessage.IsBodyHtml = true;
+            var apiKey = _config["EmailConfiguration:ApiKey"];
+            var fromAddress = _config["EmailConfiguration:From"];
 
-                SmtpClient smtp = new SmtpClient();
-                smtp.Host = config["EmailConfiguration:SmtpServer"];
-                smtp.EnableSsl = bool.Parse(config["EmailConfiguration:EnableSsl"]);
-                NetworkCredential networkCredentials = new NetworkCredential(config["EmailConfiguration:Username"], config["EmailConfiguration:Password"]);
-                smtp.UseDefaultCredentials = false;
-                smtp.Credentials = networkCredentials;
-                smtp.Port = int.Parse(config["EmailConfiguration:Port"]);
+            var client = new SendGridClient(apiKey);
 
-                await smtp.SendMailAsync(mailMessage);
-            }
+            var from = new EmailAddress(fromAddress, "BALANCR");
+            var to = new EmailAddress(email);
+
+            var msg = MailHelper.CreateSingleEmail(
+                from,
+                to,
+                subject,
+                "",
+                htmlMessage
+            );
+
+            await client.SendEmailAsync(msg);
         }
     }
 }
