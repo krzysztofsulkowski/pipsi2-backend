@@ -203,7 +203,9 @@ namespace budget_api.Services
                 return ServiceResult.Success();
             }
 
-            return ServiceResult.Failure("Password reset failed.");
+            var errors = result.Errors.Select(e => e.Description);
+            string errorMessage = string.Join(", ", errors);
+            return ServiceResult.Failure(errorMessage);
         }
 
         public async Task<ServiceResult<LoginResponse>> HandleExternalLoginAsync()
