@@ -1,15 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using System.Net.Mail;
 
 namespace budget_api.Services
 {
     public class EmailSender : IEmailSender
     {
         private readonly IConfiguration _config;
-
         public EmailSender(IConfiguration config)
         {
             _config = config;
