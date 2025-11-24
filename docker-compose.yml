@@ -43,7 +43,7 @@ services:
 
   metabase:
     image: metabase/metabase:latest
-    container_name: aflos-metabase-dev
+    container_name: banalcer-metabase-dev
     hostname: metabase
     ports:
       - "3001:3000"
@@ -64,7 +64,7 @@ services:
 
   metabase_db:
     image: postgres:15
-    container_name: aflos-metabase-db-dev
+    container_name: banalcer-metabase-db-dev
     hostname: metabase_db
     environment:
       POSTGRES_USER: metabase

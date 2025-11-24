@@ -298,7 +298,7 @@ namespace budget_api.Services
             var handler = new JwtSecurityTokenHandler();
             var tokenString = handler.WriteToken(secToken);
 
-            var metabaseUrl = _configuration["METABASE_SITE_URL"] + "/embed/dashboard/" + tokenString + "#bordered=true&titled=true";
+            var metabaseUrl = _configuration["METABASE_SITE_URL"] + "/embed/dashboard/" + tokenString + "#bordered=false&titled=false&theme=transparent";
 
             return ServiceResult<string>.Success(metabaseUrl);
         }
