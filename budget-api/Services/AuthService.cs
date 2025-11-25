@@ -276,6 +276,34 @@ namespace budget_api.Services
                 return ServiceResult<LoginResponse>.Success(new LoginResponse(finalToken));
             }
         }
+
+        public async Task<ServiceResult<string>> MetabaseUrl(int dashboardId)
+        {
+            string key = _configuration["METABASE_EMBEDDING_SECRET_KEY"];
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+            var header = new JwtHeader(credentials);
+
+            var dash = new Dictionary<string, int>();
+            dash.Add("dashboard", dashboardId);
+
+            var pars = new Dictionary<string, string>();
+
+            JwtPayload payload = new JwtPayload
+            {
+                {"resource",dash } ,
+                {"params" ,pars}
+            };
+
+            var secToken = new JwtSecurityToken(header, payload);
+            var handler = new JwtSecurityTokenHandler();
+            var tokenString = handler.WriteToken(secToken);
+
+            var metabaseUrl = _configuration["METABASE_SITE_URL"] + "/embed/dashboard/" + tokenString + "#bordered=false&titled=false&theme=transparent";
+
+            return ServiceResult<string>.Success(metabaseUrl);
+        }
     }
 }
 

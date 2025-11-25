@@ -24,21 +24,21 @@ namespace budget_api.Controllers.Admin
         public async Task<IActionResult> GetAllRoles()
         {
             var result = await _userManagementService.GetAllRolesAsync();
-            return HandleStatusCodeServiceResult(result);
+            return HandleServiceResult(result);
         }
 
         [HttpPost("get-all-users")]
         public async Task<IActionResult> GetAllUsers([FromBody] DataTableRequest request)
         {
             var serviceResponse = await _userManagementService.GetAllUsers(request);
-            return HandleStatusCodeServiceResult(serviceResponse);
+            return HandleServiceResult(serviceResponse);
         }
 
         [HttpPost("create-user")]
         public async Task<IActionResult> CreateUser([FromBody] UserDto userDto)
         {
             var result = await _userManagementService.CreateUser(userDto, User);
-            return HandleStatusCodeServiceResult(result);
+            return HandleServiceResult(result);
         }
 
         [HttpPost("update-user")]
@@ -87,7 +87,7 @@ namespace budget_api.Controllers.Admin
             }
 
             var result = await _userManagementService.GetUserById(userId);
-            return HandleStatusCodeServiceResult(result);
+            return HandleServiceResult(result);
         }
     }
 }

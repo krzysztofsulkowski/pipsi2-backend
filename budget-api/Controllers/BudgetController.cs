@@ -123,7 +123,7 @@ namespace budget_api.Controllers
 
             var result = await _budgetService.GetBudgetByIdAsync(budgetId, userId);
 
-            return HandleStatusCodeServiceResult(result);
+            return HandleServiceResult(result);
         }
 
         [HttpGet("my-budgets")]

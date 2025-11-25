@@ -1,14 +1,15 @@
-﻿using budget_api.Services.Results;
+﻿using budget_api.Services.Responses;
+using budget_api.Services.Results;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Net;
 using System.Security.Claims;
-using budget_api.Services.Responses;
 
 namespace budget_api.Controllers
 {
     public abstract class BudgetApiBaseController : Controller
     {
-        protected BudgetApiBaseController() : base(){}
+        protected BudgetApiBaseController() : base() { }
 
         protected string? CurrentUserId { get { return User?.FindFirstValue(ClaimTypes.NameIdentifier); } }
 
@@ -25,7 +26,7 @@ namespace budget_api.Controllers
             return Redirect($"/Error?message={serviceResult.Error.Description}&statusCode={serviceResult.StatusCode}");
         }
 
-        protected IActionResult HandleStatusCodeServiceResult<T>(ServiceResult<T> serviceResult, int? customStatusCode = null)
+        protected IActionResult HandleServiceResult<T>(ServiceResult<T> serviceResult, int? customStatusCode = null)
         {
             if (serviceResult.IsSuccess)
             {
@@ -41,8 +42,6 @@ namespace budget_api.Controllers
                 }
                 return customStatusCode.HasValue ? StatusCode(customStatusCode.Value, serviceResult.Data) : Ok(serviceResult.Data);
             }
-            //else if (serviceResult.StatusCode.HasValue)
-            //    return StatusCode((int)serviceResult.StatusCode);
 
             var errors = new Dictionary<string, string[]>() { { "Model", serviceResult.Error.Errors.ToArray() } };
 
@@ -61,8 +60,7 @@ namespace budget_api.Controllers
         {
             if (serviceResult.IsSuccess)
                 return customStatusCode.HasValue ? StatusCode(customStatusCode.Value) : Ok();
-            //else if (serviceResult.StatusCode.HasValue)
-            //    return StatusCode((int)serviceResult.StatusCode);
+
 
             var errors = new Dictionary<string, string[]>() { { "Model", serviceResult.Error.Errors.ToArray() } };
 
@@ -75,17 +73,6 @@ namespace budget_api.Controllers
             vpd.Extensions.Add("traceId", HttpContext.TraceIdentifier);
 
             return ValidationProblem(vpd);
-        }
-
-        protected bool IsAjaxRequest()
-        {
-            if (Request.Headers != null)
-            {
-                return !string.IsNullOrEmpty(Request.Headers["X-Requested-With"]) &&
-                    string.Equals(Request.Headers["X-Requested-With"], "XmlHttpRequest", StringComparison.OrdinalIgnoreCase);
-            }
-
-            return false;
         }
     }
 }

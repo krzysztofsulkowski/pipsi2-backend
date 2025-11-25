@@ -21,7 +21,7 @@ namespace budget_api.Controllers
         public async Task<IActionResult> GetHistoryLogs([FromBody] DataTableRequest request)
         {
             var serviceResponse = await _historyLogService.GetHistoryLogs(request);
-            return HandleStatusCodeServiceResult(serviceResponse);
+            return HandleServiceResult(serviceResponse);
         }
     }
 }
