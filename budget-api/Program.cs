@@ -143,7 +143,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// Konfiguracja do poprawnej obs³ugi za reverse proxy (na Render)
+// Konfiguracja do poprawnej obsï¿½ugi za reverse proxy (na Render)
 var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -161,7 +161,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
