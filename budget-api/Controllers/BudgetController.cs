@@ -133,7 +133,7 @@ namespace budget_api.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _budgetService.GetUserBudgetsAsync(userId);
-            return HandleStatusCodeServiceResult(result);
+            return HandleServiceResult(result);
         }
 
         [HttpPost("{budgetId:int}/edit")]
