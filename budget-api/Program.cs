@@ -1,4 +1,4 @@
-using budget_api.Models;
+Ôªøusing budget_api.Models;
 using budget_api.Seeders;
 using budget_api.Services;
 using budget_api.Services.Interfaces;
@@ -25,7 +25,7 @@ if (envFilePath != null && File.Exists(envFilePath))
 }
 else
 {
-    Console.WriteLine("OSTRZEØENIE: Nie znaleziono pliku .env.");
+    Console.WriteLine("OSTRZE≈ªENIE: Nie znaleziono pliku .env.");
 }
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,8 +71,8 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuer = true, // Sprawdza, czy token pochodzi od zaufanego serwera
         ValidateAudience = true, // Sprawdza, czy token jest przeznaczony dla naszej aplikacji
-        ValidateLifetime = true, // Sprawdza, czy token nie wygas≥
-        ValidateIssuerSigningKey = true, // Sprawdza, czy klucz uøyty do podpisania tokena jest prawid≥owy
+        ValidateLifetime = true, // Sprawdza, czy token nie wygas≈Ç
+        ValidateIssuerSigningKey = true, // Sprawdza, czy klucz u≈ºyty do podpisania tokena jest prawid≈Çowy
 
         ValidIssuer = builder.Configuration["JWT:Issuer"],
         ValidAudience = builder.Configuration["JWT:Audience"],
