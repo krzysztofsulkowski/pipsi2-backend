@@ -225,6 +225,69 @@ public class RegistrationAPITests
         Console.WriteLine("[Test 4] OK: Empty username correctly rejected.");
     }
 
+    [Test, Order(5)]
+    public async Task Register_Should_Return_Error_When_Password_Is_Empty()
+    {
+        var email = $"emptypass_{Guid.NewGuid()}@example.com";
+        var username = $"user_{Guid.NewGuid():N}".Substring(0, 12);
+
+        var payload = new
+        {
+            email,
+            username,
+            password = ""
+        };
+
+        Console.WriteLine("[Test 5] Start: empty password test");
+        Console.WriteLine($"[Test 5] Payload: {JsonSerializer.Serialize(payload)}");
+
+        IAPIResponse response;
+
+        try
+        {
+            response = await _request.PostAsync("/api/authentication/register",
+                new() { DataObject = payload });
+        }
+        catch (PlaywrightException ex)
+        {
+            Console.WriteLine($"[Test 5] HTTPS request failed: {ex.Message}");
+            Console.WriteLine("[Test 5] Retrying on HTTP...");
+
+            await _request.DisposeAsync();
+            _baseUrl = HttpUrl;
+
+            _request = await _playwright.APIRequest.NewContextAsync(new()
+            {
+                BaseURL = _baseUrl,
+                IgnoreHTTPSErrors = true,
+                ExtraHTTPHeaders = new Dictionary<string, string>
+            {
+                { "Accept", "application/json" },
+                { "Content-Type", "application/json" }
+            }
+            });
+
+            response = await _request.PostAsync("/api/authentication/register",
+                new() { DataObject = payload });
+        }
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+        var lower = body.ToLowerInvariant();
+
+        Console.WriteLine($"[Test 5] HTTP Status: {status}");
+        Console.WriteLine($"[Test 5] Body: {body}");
+
+        Assert.That(status, Is.InRange(400, 499),
+            $"Expected validation error for empty password, got HTTP {status}\n{body}");
+
+        Assert.That(lower.Contains("already exists"), Is.False,
+            $"API returned duplicate-user error instead of empty-password validation error:\n{body}");
+
+        Console.WriteLine("[Test 5] OK: Empty password correctly rejected.");
+    }
+
+
 
 
 
