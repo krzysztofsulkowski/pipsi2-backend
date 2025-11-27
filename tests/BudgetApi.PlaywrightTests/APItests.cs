@@ -10,7 +10,7 @@ public class ApiTests
     private IPlaywright _playwright = null!;
     private IAPIRequestContext _request = null!;
     private string _testUserEmail = $"apitest_{Guid.NewGuid()}@example.com";
-    private const string Port = "56059";
+    private const string Port = "53568";
     private const string HttpsUrl = $"https://localhost:{Port}";
     private const string HttpUrl = $"http://localhost:{Port}";
     private string _baseUrl = HttpsUrl;
