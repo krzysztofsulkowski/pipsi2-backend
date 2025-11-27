@@ -9,7 +9,7 @@ public class RegistrationAPITests
 {
     private IPlaywright _playwright = null!;
     private IAPIRequestContext _request = null!;
-    private const string Port = "53568";
+    private const string Port = "55155";
     private const string HttpsUrl = $"https://localhost:{Port}";
     private const string HttpUrl = $"http://localhost:{Port}";
     private string _baseUrl = HttpsUrl;
@@ -162,6 +162,69 @@ public class RegistrationAPITests
 
         Console.WriteLine("[Test 3] OK: Empty email correctly rejected.");
     }
+
+    // Test 4(Registration): Register should return error when username is empty
+    [Test, Order(4)]
+    public async Task Register_Should_Return_Error_When_Username_Is_Empty()
+    {
+        var email = $"emptyuser_{Guid.NewGuid()}@example.com";
+
+        var payload = new
+        {
+            email,
+            username = "",
+            password = Password
+        };
+
+        Console.WriteLine("[Test 4] Start: empty username test");
+        Console.WriteLine($"[Test 4] Payload: {JsonSerializer.Serialize(payload)}");
+
+        IAPIResponse response;
+
+        try
+        {
+            response = await _request.PostAsync("/api/authentication/register",
+                new() { DataObject = payload });
+        }
+        catch (PlaywrightException ex)
+        {
+            Console.WriteLine($"[Test 4] HTTPS request failed: {ex.Message}");
+            Console.WriteLine("[Test 4] Retrying on HTTP...");
+
+            await _request.DisposeAsync();
+            _baseUrl = HttpUrl;
+
+            _request = await _playwright.APIRequest.NewContextAsync(new()
+            {
+                BaseURL = _baseUrl,
+                IgnoreHTTPSErrors = true,
+                ExtraHTTPHeaders = new Dictionary<string, string>
+            {
+                { "Accept", "application/json" },
+                { "Content-Type", "application/json" }
+            }
+            });
+
+            response = await _request.PostAsync("/api/authentication/register",
+                new() { DataObject = payload });
+        }
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+        var lower = body.ToLowerInvariant();
+
+        Console.WriteLine($"[Test 4] HTTP Status: {status}");
+        Console.WriteLine($"[Test 4] Body: {body}");
+
+        Assert.That(status, Is.InRange(400, 499),
+            $"Expected validation error for empty username, got HTTP {status}\n{body}");
+
+        Assert.That(lower.Contains("already exists"), Is.False,
+            $"API returned duplicate-user error instead of empty-username validation error:\n{body}");
+
+        Console.WriteLine("[Test 4] OK: Empty username correctly rejected.");
+    }
+
 
 
 
