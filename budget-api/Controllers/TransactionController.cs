@@ -22,7 +22,7 @@ namespace budget_api.Controllers
 
         private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        // 1. Add income
+        // Add income
         [HttpPost("income")]
         public async Task<IActionResult> AddIncome([FromRoute] int budgetId, [FromBody] CreateIncomeDto model)
         {
@@ -34,7 +34,7 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        // 2. Search transactions (DataTable)
+        // Search transactions (DataTable)
         [HttpPost("transactions/search")]
         public async Task<IActionResult> SearchTransactions([FromRoute] int budgetId, [FromBody] DataTableRequest request)
         {
@@ -45,7 +45,7 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        // 3. Get income details
+        // Get income details
         [HttpGet("income/{incomeId:int}")]
         public async Task<IActionResult> GetIncome([FromRoute] int budgetId, [FromRoute] int incomeId)
         {
@@ -56,7 +56,7 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        // 4. Edit income
+        // Edit income
         [HttpPost("income/{incomeId:int}")]
         public async Task<IActionResult> EditIncome([FromRoute] int budgetId, [FromRoute] int incomeId, [FromBody] CreateIncomeDto model)
         {
@@ -68,7 +68,7 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        // 5. Delete income
+        // Delete income
         [HttpDelete("income/{incomeId:int}")]
         public async Task<IActionResult> DeleteIncome([FromRoute] int budgetId, [FromRoute] int incomeId)
         {
@@ -79,7 +79,7 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        // 6. Add expense
+        // Add expense
         [HttpPost("expenses")]
         public async Task<IActionResult> AddExpense([FromRoute] int budgetId, [FromBody] CreateExpenseDto model)
         {
