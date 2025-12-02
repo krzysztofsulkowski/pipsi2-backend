@@ -100,6 +100,7 @@ builder.Services.AddCors(options =>
 
 // Add services to the container
 builder.Services.AddScoped<RoleSeeder>();
+builder.Services.AddScoped<CategorySeeder>();
 builder.Services.AddScoped<SeedManager>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();

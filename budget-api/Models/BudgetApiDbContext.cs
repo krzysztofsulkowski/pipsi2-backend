@@ -56,21 +56,6 @@ namespace budget_api.Models
             modelBuilder.Entity<BudgetTransaction>()
                 .Property(t => t.CreatedAt)
                 .HasColumnType("timestamp with time zone");
-
-            modelBuilder.Entity<Category>().HasData(
-                new Category { Id = 1, Name = "Jedzenie" },
-                new Category { Id = 2, Name = "Mieszkanie / Rachunki" },
-                new Category { Id = 3, Name = "Transport" },
-                new Category { Id = 4, Name = "Telekomunikacja" },
-                new Category { Id = 5, Name = "Opieka zdrowotna" },
-                new Category { Id = 6, Name = "Ubranie" },
-                new Category { Id = 7, Name = "Higiena" },
-                new Category { Id = 8, Name = "Dzieci" },
-                new Category { Id = 9, Name = "Rozrywka" },
-                new Category { Id = 10, Name = "Edukacja" },
-                new Category { Id = 11, Name = "Spłata długów" },
-                new Category { Id = 12, Name = "Inne" }
-            );
         }
 
         private async Task<IdentityUser?> GetIdentityUser()
