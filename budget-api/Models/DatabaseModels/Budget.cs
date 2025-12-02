@@ -6,6 +6,7 @@
         public string Name { get; set; } = string.Empty;
 
         public bool IsArchived { get; set; } = false;
+        public DateTime CreationDate { get; set; } = DateTime.UtcNow;
 
         public ICollection<UserBudget> UserBudgets { get; set; } = new List<UserBudget>();
     }

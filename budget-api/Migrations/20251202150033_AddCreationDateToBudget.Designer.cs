@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using budget_api.Models;
@@ -11,9 +12,11 @@ using budget_api.Models;
 namespace budget_api.Migrations
 {
     [DbContext(typeof(BudgetApiDbContext))]
-    partial class BudgetApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202150033_AddCreationDateToBudget")]
+    partial class AddCreationDateToBudget
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
