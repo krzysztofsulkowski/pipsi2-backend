@@ -1,4 +1,5 @@
 ﻿using budget_api.Models.Dto;
+using budget_api.Services.Errors;
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity;
@@ -19,8 +20,10 @@ namespace budget_api.Services
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IEmailSender _emailSender;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private const string ObjectName = "User";
 
-        public AuthService(UserManager<IdentityUser> userManager, ILogger<AuthService> logger, IConfiguration configuration, SignInManager<IdentityUser> signInManager, IWebHostEnvironment hostingEnvironment, IEmailSender emailSender)
+        public AuthService(UserManager<IdentityUser> userManager, ILogger<AuthService> logger, IConfiguration configuration, SignInManager<IdentityUser> signInManager, IWebHostEnvironment hostingEnvironment, IEmailSender emailSender, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _logger = logger;
@@ -28,6 +31,7 @@ namespace budget_api.Services
             _signInManager = signInManager;
             _hostingEnvironment = hostingEnvironment;
             _emailSender = emailSender;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ServiceResult> RegisterAsync(RegisterDto registerDto, bool isAdmin = false)
@@ -277,32 +281,21 @@ namespace budget_api.Services
             }
         }
 
-        public async Task<ServiceResult<string>> MetabaseUrl(int dashboardId)
+        public async Task<ServiceResult<UserDto>> GetMe()
         {
-            string key = _configuration["METABASE_EMBEDDING_SECRET_KEY"];
-
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
-            var header = new JwtHeader(credentials);
-
-            var dash = new Dictionary<string, int>();
-            dash.Add("dashboard", dashboardId);
-
-            var pars = new Dictionary<string, string>();
-
-            JwtPayload payload = new JwtPayload
+            var userPrincipal = _httpContextAccessor.HttpContext?.User;
+            var username = userPrincipal?.Identity?.Name;           
+            if (string.IsNullOrEmpty(username))
             {
-                {"resource",dash } ,
-                {"params" ,pars}
+                var userId = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+                return ServiceResult<UserDto>.Failure(CommonErrors.NotFound(ObjectName, userId ?? "Unknown"));
+            }
+
+            var user = new UserDto
+            {
+                UserName = username
             };
-
-            var secToken = new JwtSecurityToken(header, payload);
-            var handler = new JwtSecurityTokenHandler();
-            var tokenString = handler.WriteToken(secToken);
-
-            var metabaseUrl = _configuration["METABASE_SITE_URL"] + "/embed/dashboard/" + tokenString + "#bordered=false&titled=false&theme=transparent";
-
-            return ServiceResult<string>.Success(metabaseUrl);
+            return ServiceResult<UserDto>.Success(user);
         }
     }
 }
