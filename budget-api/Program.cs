@@ -115,6 +115,7 @@ builder.Services.AddHangfireServer();
 
 // Add services to the container
 builder.Services.AddScoped<RoleSeeder>();
+builder.Services.AddScoped<CategorySeeder>();
 builder.Services.AddScoped<SeedManager>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
@@ -122,6 +123,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IHistoryLogService, HistoryLogService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

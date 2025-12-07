@@ -36,6 +36,11 @@ namespace budget_api.Services
 
         public async Task<ServiceResult> RegisterAsync(RegisterDto registerDto, bool isAdmin = false)
         {
+            if (string.IsNullOrWhiteSpace(registerDto.Email))
+            {
+                return ServiceResult.Failure("Adres e-mail jest wymagany.");
+            }
+
             var userExists = await _userManager.FindByEmailAsync(registerDto.Email);
             if (userExists != null)
             {

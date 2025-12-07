@@ -113,6 +113,10 @@ namespace budget_api.Services
 
         public async Task<ServiceResult<UserDto>> CreateUser(UserDto user, ClaimsPrincipal currentUser)
         {
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return ServiceResult<UserDto>.Failure("Adres e-mail jest wymagany.");
+            }
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -175,6 +179,10 @@ namespace budget_api.Services
 
         public async Task<ServiceResult> UpdateUser(UserDto model)
         {
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                return ServiceResult.Failure("Adres e-mail jest wymagany.");
+            }
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
