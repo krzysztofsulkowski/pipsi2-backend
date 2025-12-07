@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using budget_api.Models;
@@ -11,9 +12,11 @@ using budget_api.Models;
 namespace budget_api.Migrations
 {
     [DbContext(typeof(BudgetApiDbContext))]
-    partial class BudgetApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251127141402_AddBudgetTransaction")]
+    partial class AddBudgetTransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,9 +229,6 @@ namespace budget_api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<bool>("IsArchived")
                         .HasColumnType("boolean");
 
@@ -289,9 +289,6 @@ namespace budget_api.Migrations
                     b.Property<int>("BudgetId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -299,25 +296,7 @@ namespace budget_api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("Frequency")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PaymentMethod")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ReceiptImageUrl")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -326,88 +305,9 @@ namespace budget_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.HasIndex("BudgetId");
 
                     b.ToTable("BudgetTransactions");
-                });
-
-            modelBuilder.Entity("budget_api.Models.DatabaseModels.Category", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Categories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Jedzenie"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Mieszkanie / Rachunki"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Transport"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "Telekomunikacja"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Name = "Opieka zdrowotna"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Name = "Ubranie"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Name = "Higiena"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Name = "Dzieci"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Name = "Rozrywka"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Name = "Edukacja"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Name = "Spłata długów"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Name = "Inne"
-                        });
                 });
 
             modelBuilder.Entity("budget_api.Models.DatabaseModels.HistoryLog", b =>
@@ -562,11 +462,13 @@ namespace budget_api.Migrations
 
             modelBuilder.Entity("budget_api.Models.DatabaseModels.BudgetTransaction", b =>
                 {
-                    b.HasOne("budget_api.Models.DatabaseModels.Category", "Category")
+                    b.HasOne("budget_api.Models.DatabaseModels.Budget", "Budget")
                         .WithMany()
-                        .HasForeignKey("CategoryId");
+                        .HasForeignKey("BudgetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Category");
+                    b.Navigation("Budget");
                 });
 
             modelBuilder.Entity("budget_api.Models.DatabaseModels.UserBudget", b =>

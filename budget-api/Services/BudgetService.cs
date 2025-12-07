@@ -260,12 +260,21 @@ namespace budget_api.Services
         {
             try
             {
-                var budgets = await _context.Budgets
-                    .Where(b => !b.IsArchived && b.UserBudgets.Any(ub => ub.UserId == userId))
-                    .Select(b => new BudgetSummaryViewModel { Id = b.Id, Name = b.Name })
-                    .ToListAsync();
+                var query = await _context.UserBudgets
+                .Where(ub => ub.UserId == userId)
+                .Include(ub => ub.Budget)
+                .Select(ub => new BudgetSummaryViewModel
+                {
+                    Id = ub.BudgetId,
+                    Name = ub.Budget.Name,
+                    CreationDate = ub.Budget.CreationDate,
+                    Status = ub.Budget.IsArchived ? "Zarchiwizowany" : "Aktywny",
+                    Role = ub.Role == UserRoleInBudget.Owner ? "Właściciel" : "Członek"
+                })
+                .OrderByDescending(b => b.CreationDate)
+                .ToListAsync();
 
-                return ServiceResult<List<BudgetSummaryViewModel>>.Success(budgets);
+                return ServiceResult<List<BudgetSummaryViewModel>>.Success(query);            
             }
             catch (Exception ex)
             {
