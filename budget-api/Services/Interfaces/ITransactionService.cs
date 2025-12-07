@@ -16,6 +16,7 @@ namespace budget_api.Services.Interfaces
         Task<ServiceResult> EditExpenseAsync(int budgetId, int expenseId, CreateExpenseDto model, string userId);
         Task<ServiceResult> DeleteExpenseAsync(int budgetId, int expenseId, string userId);
 
-        Task<ServiceResult<DataTableResponse<TransactionListItemDto>>> SearchTransactionsAsync(int budgetId, Models.Dto.DataTableRequest request, string userId);
+        Task<ServiceResult<DataTableResponse<TransactionListItemDto>>> SearchTransactionsAsync(int budgetId, DataTableRequest request, string userId);
+        Task<ServiceResult<List<TransactionListItemDto>>> GetTransactionsForStatsAsync(int budgetId, int year, int month);
     }
 }

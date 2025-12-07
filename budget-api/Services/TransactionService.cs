@@ -380,5 +380,50 @@ namespace budget_api.Services
                 return ServiceResult<DataTableResponse<TransactionListItemDto>>.Failure("Błąd podczas wyszukiwania transakcji.");
             }
         }
+
+        public async Task<ServiceResult<List<TransactionListItemDto>>> GetTransactionsForStatsAsync(int budgetId, int year, int month)
+        {
+            try
+            {
+                var query = _context.BudgetTransactions
+                    .Include(t => t.Category)
+                    .Where(t => t.BudgetId == budgetId);
+
+                if (month > 0)
+                {
+                    query = query.Where(t => t.Date.Year == year && t.Date.Month == month);
+                }
+                else
+                {
+                    query = query.Where(t => t.Date.Year == year);
+                }
+
+                var list = await query.Select(t => new TransactionListItemDto
+                {
+                    Id = t.Id,
+                    Date = t.Date,
+                    Title = t.Title ?? (t.Type == TransactionType.Income ? "Przychód" : "Wydatek"),
+
+                    Amount = t.Amount.ToString("0.00", CultureInfo.InvariantCulture),
+
+                    Type = t.Type,
+                    CategoryName = t.Category != null ? t.Category.Name : "Inne",
+                    Status = t.Status,
+                    PaymentMethod = t.PaymentMethod,
+
+                    UserName = _context.Users
+                        .Where(u => u.Id == t.CreatedByUserId)
+                        .Select(u => u.UserName)
+                        .FirstOrDefault() ?? "Nieznany"
+                }).ToListAsync();
+
+                return ServiceResult<List<TransactionListItemDto>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pobierania statystyk dla budżetu {BudgetId}", budgetId);
+                return ServiceResult<List<TransactionListItemDto>>.Failure("Nie udało się pobrać danych do statystyk.");
+            }
+        }
     }
 }
