@@ -3,6 +3,7 @@ using budget_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Sprache;
 
 namespace budget_api.Controllers
 {
@@ -72,6 +73,14 @@ namespace budget_api.Controllers
             var token = result.Data.Token;
             var successUrl = $"{returnUrl}?token={token}";
             return Redirect(successUrl);
+        }
+
+        [HttpGet("me")]
+        [Authorize] 
+        public async Task<IActionResult> GetMe()
+        {
+            var result = await _authService.GetMe();            
+            return HandleServiceResult(result);
         }
     }
 }

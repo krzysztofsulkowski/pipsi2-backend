@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 const string envFileName = ".env";
 var currentDirectory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
@@ -98,6 +100,19 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Konfiguracja Hangfire
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options =>
+    {
+        options.UseNpgsqlConnection(connectionString);
+    }));
+
+builder.Services.AddHangfireServer();
+
+
 // Add services to the container
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<CategorySeeder>();
@@ -177,6 +192,14 @@ using (var scope = app.Services.CreateScope())
 
     var seedManager = scope.ServiceProvider.GetRequiredService<SeedManager>();
     await seedManager.Seed();
+
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    //recurringJobManager.AddOrUpdate<eNotificationService>(
+    //    "CheckAndSendExpirationNotifications",
+    //    service => service.SendEmailNotifications(),
+    //    Cron.Daily);
 }
+
 app.Run();
 

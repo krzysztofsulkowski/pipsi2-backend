@@ -2,82 +2,189 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <title>Wymagana rejestracja</title>
     <style>
-        /* CSS pozostaje bez zmian - stylistyka jest spójna */
         body {
-            font-family: Arial, sans-serif;
-            color: #333;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #272C3C;
             line-height: 1.6;
-            background-color: #f4f4f4;
+            background-color: #F4F5F7;
             margin: 0;
             padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .wrapper {
+            width: 100%;
+            background-color: #F4F5F7;
+            padding: 40px 0;
         }
 
         .container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
             background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(39, 44, 60, 0.1);
+        }
+
+        .header-bar {
+            height: 6px;
+            width: 100%;
+            background: linear-gradient(90deg, #272C3C 0%, #EAC278 100%);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            background-color: #FFF6E0;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            text-align: center;
+            line-height: 60px;
+            font-size: 28px;
+            border: 2px solid #EAC278;
         }
 
         h1 {
-            color: #2E8B57;
+            color: #272C3C;
             text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+            margin-top: 0;
         }
 
         p {
             font-size: 16px;
+            color: #444;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        strong {
-            color: #2E8B57;
+        .invite-box {
+            background-color: #F9FAFC;
+            border: 1px dashed #969CBD;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .highlight-text {
+            color: #272C3C;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .budget-name {
+            color: #272C3C;
+            font-weight: bold;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .action-label {
+            font-size: 12px;
+            color: #969CBD;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
         }
 
         .button-container {
             text-align: center;
-            margin: 30px 0;
+            margin: 35px 0;
         }
 
         .button {
-            background-color: #2E8B57;
-            color: #ffffff;
-            padding: 15px 25px;
+            background-color: #272C3C;
+            color: #ffffff !important;
+            padding: 16px 32px;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-weight: bold;
             display: inline-block;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(234, 194, 120, 0.3);
+            transition: background-color 0.3s;
+        }
+
+        .info-block {
+            color: #272C3C;
+            background-color: #FFF6E0; 
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .sub-text {
+            font-size: 13px;
+            color: #969CBD;
+            margin-top: 30px;
+            text-align: center;
         }
 
         .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #777;
             text-align: center;
+            padding: 20px;
+            background-color: #F4F5F7;
+            border-top: 1px solid #C9CBD6;
         }
+
+            .footer p {
+                font-size: 12px;
+                color: #969CBD;
+                margin: 5px 0;
+            }
     </style>
 </head>
 <body>
-    <div class='container'>
-        <h1>Jesteś o krok od dołączenia!</h1>
-        <p>Witaj!</p>
-        <p>Użytkownik <strong>{InviterName}</strong> zaprasza Cię do dołączenia do wspólnego budżetu o nazwie <strong>{BudgetName}</strong>.</p>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header-bar"></div>
 
-        <p><strong>Aby zaakceptować to zaproszenie, musisz najpierw utworzyć darmowe konto w serwisie Balancer.</strong></p>
-        <p>Kliknij poniższy przycisk, aby przejść do strony rejestracji. Po pomyślnym założeniu konta, Twoje zaproszenie zostanie automatycznie aktywowane.</p>
+            <div class="content">
+                <div class="icon-circle">🚀</div>
 
-        <div class='button-container'>
-            <a href='{InvitationUrl}' class='button'>Zarejestruj się i dołącz do budżetu</a>
-        </div>
+                <h1>Jesteś o krok od dołączenia!</h1>
+                <p>Witaj! Otrzymałeś/aś zaproszenie do wspólnego budżetu, ale potrzebujesz konta, aby je odebrać.</p>
 
-        <p>Jeśli nie spodziewałeś/aś się tego zaproszenia, możesz bezpiecznie zignorować tę wiadomość.</p>
-        <p>Pozdrawiamy,<br>Zespół Balancer</p>
+                <div class="invite-box">
+                    <div class="action-label">Zaprasza Cię:</div>
+                    <span class="highlight-text">{InviterName}</span>
+                    <br>
+                    <div class="action-label">Do budżetu:</div>
+                    <span class="budget-name">"{BudgetName}"</span>
+                </div>
 
-        <div class='footer'>
-            <p>To jest automatyczna wiadomość, prosimy na nią nie odpowiadać.</p>
+                <p><strong>Aby zaakceptować to zaproszenie, musisz najpierw utworzyć darmowe konto w serwisie Balancer.</strong></p>
+
+                <p style="font-size: 14px; color: #6A7192;">
+                    Po pomyślnym założeniu konta przez poniższy link, Twoje zaproszenie zostanie automatycznie aktywowane.
+                </p>
+
+                <div class="button-container">
+                    <a href="{InvitationUrl}" class="button">Zarejestruj się i dołącz</a>
+                </div>
+
+                <p class="sub-text">Jeśli nie spodziewałeś/aś się tego zaproszenia, możesz je zignorować.<br>Wiadomość została wygenerowana automatycznie.</p>
+
+                <p style="text-align: center; margin-top: 40px; font-weight: bold; color: #6A7192;">
+                    Zespół Balancer
+                </p>
+            </div>
+
+            <div class="footer">
+                <p>&copy; 2025 Balancer App.</p>
+            </div>
         </div>
     </div>
 </body>
 </html>
-
