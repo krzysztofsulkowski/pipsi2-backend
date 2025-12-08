@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using System;
 
 namespace budget_api.Models.DatabaseModels
@@ -56,5 +57,6 @@ namespace budget_api.Models.DatabaseModels
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string CreatedByUserId { get; set; } = string.Empty;
+        public virtual IdentityUser? User { get; set; }
     }
 }

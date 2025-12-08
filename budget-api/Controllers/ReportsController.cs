@@ -1,69 +1,35 @@
-﻿using budget_api.Models;
-using budget_api.Models.Dto;
+﻿using budget_api.Models.Dto;
+using budget_api.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace budget_api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class ReportsController : BudgetApiBaseController
     {
-        private readonly BudgetApiDbContext _context;
+        private readonly ITransactionService _transactionService;
 
-        public ReportsController(BudgetApiDbContext context)
+        public ReportsController(ITransactionService transactionService)
         {
-            _context = context;
+            _transactionService = transactionService;
         }
 
         [HttpGet("stats")]
-        public IActionResult GetStats([FromQuery] int year, [FromQuery] int month)
+        public async Task<IActionResult> GetStats([FromQuery] int year, [FromQuery] int month, [FromQuery] int? budgetId)
         {
-            var mockData = new List<ChartDataDto>();
-            var rand = new Random();
 
-            string[] categories = { "Jedzenie", "Transport", "Biuro", "Marketing", "Czynsz", "Szkolenia" };
-            string[] users = { "Ania", "Tomek", "Marek", "Zosia" };
+            int finalBudgetId = budgetId ?? 0;
 
-            int targetYear = year > 0 ? year : DateTime.Now.Year;
-
-            int startM = month > 0 ? month : 1;
-            int endM = month > 0 ? month : 12;
-
-            for (int i = 0; i < 50; i++)
+            if (finalBudgetId == 0)
             {
-                int m = rand.Next(startM, endM + 1);
-
-                int d = rand.Next(1, 28);
-
-                var record = new ChartDataDto
-                {
-                    Date = new DateTime(targetYear, m, d),
-
-                    Amount = rand.Next(10, 500),
-
-                    Category = categories[rand.Next(categories.Length)],
-
-                    UserName = users[rand.Next(users.Length)]
-                };
-
-                mockData.Add(record);
+                return Ok(new List<TransactionListItemDto>());
             }
-
-            return Ok(mockData);
+            var transactions = await _transactionService.GetTransactionsForStatsAsync(finalBudgetId, year, month);
+            return HandleServiceResult(transactions);
         }
     }
 }
 
-
-//var data = await _context.Expenses
-//    .Where(e => e.Date.Year == year && e.Date.Month == month)
-//    .Select(e => new ChartDataDto
-//    {
-//        Amount = e.Amount,
-//        Category = e.CategoryName,
-//        Date = ,
-//        UserName = ,
-
-//    })
-//    .ToListAsync();
-//return Ok(data);

@@ -10,7 +10,7 @@ namespace budget_api.Models.Dto
         public int Id { get; set; }
         public DateTime Date { get; set; }
         public string Title { get; set; } = string.Empty;
-        public string Amount { get; set; } = string.Empty;
+        public decimal Amount { get; set; } 
         public TransactionType Type { get; set; }
         public string? CategoryName { get; set; }
         public ExpenseStatus? Status { get; set; }

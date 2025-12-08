@@ -56,6 +56,18 @@ namespace budget_api.Models
             modelBuilder.Entity<BudgetTransaction>()
                 .Property(t => t.CreatedAt)
                 .HasColumnType("timestamp with time zone");
+
+            modelBuilder.Entity<BudgetTransaction>()
+                 .HasOne(t => t.User)
+                 .WithMany()
+                 .HasForeignKey(t => t.CreatedByUserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BudgetTransaction>()
+                .HasOne(t => t.Category)
+                .WithMany()
+                .HasForeignKey(t => t.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
 
         private async Task<IdentityUser?> GetIdentityUser()

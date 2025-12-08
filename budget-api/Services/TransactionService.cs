@@ -352,7 +352,7 @@ namespace budget_api.Services
                         Id = t.Id,
                         Date = t.Date,
                         Title = t.Title,
-                        Amount = t.Amount.ToString("0.##", CultureInfo.InvariantCulture) + " PLN",
+                        Amount = t.Amount,
                         Type = t.Type,
                         CategoryName = t.Category != null ? t.Category.Name : null,
                         Status = t.Status,
@@ -378,6 +378,49 @@ namespace budget_api.Services
             {
                 _logger.LogError(ex, "Błąd podczas wyszukiwania transakcji dla budżetu {BudgetId}", budgetId);
                 return ServiceResult<DataTableResponse<TransactionListItemDto>>.Failure("Błąd podczas wyszukiwania transakcji.");
+            }
+        }
+
+        public async Task<ServiceResult<List<TransactionListItemDto>>> GetTransactionsForStatsAsync(int budgetId, int year, int month)
+        {
+            try
+            {
+                var query = _context.BudgetTransactions
+                    .Include(t => t.Category)
+                    .Include(t => t.User) 
+                    .Where(t => t.BudgetId == budgetId);
+
+                if (month > 0)
+                {
+                    query = query.Where(t => t.Date.Year == year && t.Date.Month == month);
+                }
+                else
+                {
+                    query = query.Where(t => t.Date.Year == year);
+                }
+
+                var list = await query.Select(t => new TransactionListItemDto
+                {
+                    Id = t.Id,
+                    Date = t.Date,
+                    Title = (t.Title == null || t.Title == string.Empty)
+                             ? (t.Type == TransactionType.Income ? "Przychód" : "Wydatek")
+                             : t.Title,
+                    Amount = t.Amount,
+                    Type = t.Type,
+                    CategoryName = t.Category != null ? t.Category.Name : "Inne",
+                    Status = t.Status,
+                    PaymentMethod = t.PaymentMethod,
+                    UserName = t.User != null ? t.User.UserName : "Nieznany"
+
+                }).ToListAsync();
+
+                return ServiceResult<List<TransactionListItemDto>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pobierania statystyk dla budżetu {BudgetId}", budgetId);
+                return ServiceResult<List<TransactionListItemDto>>.Failure("Nie udało się pobrać danych do statystyk.");
             }
         }
     }
