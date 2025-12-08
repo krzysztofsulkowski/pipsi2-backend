@@ -395,3 +395,5 @@ slnx.sqlite
 .env.local
 .env.development
 .env.production
+/docker-compose.yml
+/docker-compose.yml
