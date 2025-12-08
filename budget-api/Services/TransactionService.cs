@@ -352,7 +352,7 @@ namespace budget_api.Services
                         Id = t.Id,
                         Date = t.Date,
                         Title = t.Title,
-                        Amount = t.Amount.ToString("0.##", CultureInfo.InvariantCulture) + " PLN",
+                        Amount = t.Amount,
                         Type = t.Type,
                         CategoryName = t.Category != null ? t.Category.Name : null,
                         Status = t.Status,
@@ -387,6 +387,7 @@ namespace budget_api.Services
             {
                 var query = _context.BudgetTransactions
                     .Include(t => t.Category)
+                    .Include(t => t.User) 
                     .Where(t => t.BudgetId == budgetId);
 
                 if (month > 0)
@@ -402,19 +403,16 @@ namespace budget_api.Services
                 {
                     Id = t.Id,
                     Date = t.Date,
-                    Title = t.Title ?? (t.Type == TransactionType.Income ? "Przychód" : "Wydatek"),
-
-                    Amount = t.Amount.ToString("0.00", CultureInfo.InvariantCulture),
-
+                    Title = (t.Title == null || t.Title == string.Empty)
+                             ? (t.Type == TransactionType.Income ? "Przychód" : "Wydatek")
+                             : t.Title,
+                    Amount = t.Amount,
                     Type = t.Type,
                     CategoryName = t.Category != null ? t.Category.Name : "Inne",
                     Status = t.Status,
                     PaymentMethod = t.PaymentMethod,
+                    UserName = t.User != null ? t.User.UserName : "Nieznany"
 
-                    UserName = _context.Users
-                        .Where(u => u.Id == t.CreatedByUserId)
-                        .Select(u => u.UserName)
-                        .FirstOrDefault() ?? "Nieznany"
                 }).ToListAsync();
 
                 return ServiceResult<List<TransactionListItemDto>>.Success(list);
