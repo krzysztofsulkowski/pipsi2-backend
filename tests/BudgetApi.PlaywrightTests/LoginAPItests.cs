@@ -255,6 +255,65 @@ public class LoginAPITests
         Console.WriteLine("[Test 3] OK: Login rejected correctly with wrong email.");
     }
 
+    // Test 4(Login): should return error when password is empty
+    [Test, Order(4)]
+    public async Task Login_Should_Return_Error_When_Password_Is_Empty()
+    {
+        // Generate test credentials
+        var email = $"loginempty_{Guid.NewGuid()}@example.com";
+        var username = $"user_{Guid.NewGuid():N}".Substring(0, 12);
+        var correctPassword = $"P@ss{Guid.NewGuid():N}".Substring(0, 12);
+
+        // Payload for registration
+        var registrationPayload = new
+        {
+            email,
+            username,
+            password = correctPassword
+        };
+
+        Console.WriteLine("[Test 4] Registering user for empty-password login test");
+        Console.WriteLine($"[Test 4] Registration payload: {JsonSerializer.Serialize(registrationPayload)}");
+
+        // Register the user
+        var registerResponse = await _request.PostAsync("/api/authentication/register",
+            new() { DataObject = registrationPayload });
+
+        var regStatus = registerResponse.Status;
+        var regBody = await registerResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] Registration HTTP Status: {regStatus}");
+        Console.WriteLine($"[Test 4] Registration Body: {regBody}");
+
+        Assert.That(regStatus, Is.InRange(200, 299),
+            $"User registration failed unexpectedly before empty-password login test:\nHTTP {regStatus}\n{regBody}");
+
+        // Payload for login with EMPTY password
+        var loginPayload = new
+        {
+            email,
+            password = ""
+        };
+
+        Console.WriteLine("[Test 4] Attempting login with EMPTY password");
+        Console.WriteLine($"[Test 4] Login payload: {JsonSerializer.Serialize(loginPayload)}");
+
+        // Perform login request
+        var loginResponse = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = loginPayload });
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 4] Login Body: {loginBody}");
+
+        // Expected: 400 or 401 for invalid credentials
+        Assert.That(loginStatus, Is.EqualTo(400).Or.EqualTo(401),
+            $"Expected error for empty password, got HTTP {loginStatus}\n{loginBody}");
+
+        Console.WriteLine("[Test 4] OK: Login rejected correctly with empty password.");
+    }
 
 
     [OneTimeTearDown]
