@@ -495,6 +495,70 @@ public class LoginAPITests
         Console.WriteLine("[Test 7] OK: Login with empty fields correctly rejected.");
     }
 
+    // Test 8(Login): should return error when email format is invalid
+    [Test, Order(8)]
+    public async Task Login_Should_Return_Error_When_Email_Format_Is_Invalid()
+    {
+        // Generate proper credentials for registration
+        var validEmail = $"logininvalid_{Guid.NewGuid()}@example.com";
+        var username = $"user_{Guid.NewGuid():N}".Substring(0, 12);
+        var validPassword = $"P@ss{Guid.NewGuid():N}".Substring(0, 12);
+
+        // Invalid email formats to test
+        var invalidEmail = "notanemail";
+
+        // Payload for registering the valid user
+        var registrationPayload = new
+        {
+            email = validEmail,
+            username,
+            password = validPassword
+        };
+
+        Console.WriteLine("[Test 8] Registering user for invalid email-format login test");
+        Console.WriteLine($"[Test 8] Registration payload: {JsonSerializer.Serialize(registrationPayload)}");
+
+        // Perform registration
+        var registerResponse = await _request.PostAsync("/api/authentication/register",
+            new() { DataObject = registrationPayload });
+
+        var regStatus = registerResponse.Status;
+        var regBody = await registerResponse.TextAsync();
+
+        Console.WriteLine($"[Test 8] Registration HTTP Status: {regStatus}");
+        Console.WriteLine($"[Test 8] Registration Body: {regBody}");
+
+        Assert.That(regStatus, Is.InRange(200, 299),
+            $"User registration failed unexpectedly before invalid-email login test:\nHTTP {regStatus}\n{regBody}");
+
+        // Login payload with INVALID email format
+        var loginPayload = new
+        {
+            email = invalidEmail,
+            password = validPassword
+        };
+
+        Console.WriteLine("[Test 8] Attempting login with INVALID email format");
+        Console.WriteLine($"[Test 8] Login payload: {JsonSerializer.Serialize(loginPayload)}");
+
+        // Perform login attempt
+        var loginResponse = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = loginPayload });
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 8] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 8] Login Body: {loginBody}");
+
+        // Expected: 400 or 401
+        Assert.That(loginStatus, Is.EqualTo(400).Or.EqualTo(401),
+            $"Expected error for invalid email format, but got HTTP {loginStatus}\n{loginBody}");
+
+        Console.WriteLine("[Test 8] OK: Login rejected correctly with invalid email format.");
+    }
+
+
     [OneTimeTearDown]
     public async Task Teardown()
     {
