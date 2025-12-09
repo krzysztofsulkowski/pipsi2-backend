@@ -376,6 +376,68 @@ public class LoginAPITests
         Console.WriteLine("[Test 5] OK: Login rejected correctly with empty email.");
     }
 
+    // Test 6(Login): should return error when both email and password are empty
+    [Test, Order(6)]
+    public async Task Login_Should_Return_Error_When_Email_And_Password_Are_Empty()
+    {
+        // Generate valid credentials for registration
+        var email = $"loginboth_{Guid.NewGuid()}@example.com";
+        var username = $"user_{Guid.NewGuid():N}".Substring(0, 12);
+        var correctPassword = $"P@ss{Guid.NewGuid():N}".Substring(0, 12);
+
+        // Registration payload
+        var registrationPayload = new
+        {
+            email,
+            username,
+            password = correctPassword
+        };
+
+        Console.WriteLine("[Test 6] Registering user for empty email & password test");
+        Console.WriteLine($"[Test 6] Registration payload: {JsonSerializer.Serialize(registrationPayload)}");
+
+        // Register a valid user first
+        var registerResponse = await _request.PostAsync("/api/authentication/register",
+            new() { DataObject = registrationPayload });
+
+        var regStatus = registerResponse.Status;
+        var regBody = await registerResponse.TextAsync();
+
+        Console.WriteLine($"[Test 6] Registration HTTP Status: {regStatus}");
+        Console.WriteLine($"[Test 6] Registration Body: {regBody}");
+
+        // Registration must be successful
+        Assert.That(regStatus, Is.InRange(200, 299),
+            $"User registration failed unexpectedly before empty-fields login test:\nHTTP {regStatus}\n{regBody}");
+
+        // Payload with BOTH fields empty
+        var loginPayload = new
+        {
+            email = "",
+            password = ""
+        };
+
+        Console.WriteLine("[Test 6] Attempting login with EMPTY email AND EMPTY password");
+        Console.WriteLine($"[Test 6] Login payload: {JsonSerializer.Serialize(loginPayload)}");
+
+        // Perform login request
+        var loginResponse = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = loginPayload });
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 6] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 6] Login Body: {loginBody}");
+
+        // Expected: 400 or 401
+        Assert.That(loginStatus, Is.EqualTo(400).Or.EqualTo(401),
+            $"Expected error for empty email AND password, but got HTTP {loginStatus}\n{loginBody}");
+
+        Console.WriteLine("[Test 6] OK: Login rejected correctly with empty email AND password.");
+    }
+
+
 
     [OneTimeTearDown]
     public async Task Teardown()
