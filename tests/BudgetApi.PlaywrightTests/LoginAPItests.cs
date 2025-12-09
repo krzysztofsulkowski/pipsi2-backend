@@ -558,6 +558,45 @@ public class LoginAPITests
         Console.WriteLine("[Test 8] OK: Login rejected correctly with invalid email format.");
     }
 
+    // Test 9(Login): should return error when user does NOT exist
+    [Test, Order(9)]
+    public async Task Login_Should_Return_Error_When_User_Does_Not_Exist()
+    {
+        // Generate credentials for a user that does NOT exist in the database
+        var nonexistentEmail = $"nouser_{Guid.NewGuid()}@example.com";
+        var randomPassword = $"P@ss{Guid.NewGuid():N}".Substring(0, 12);
+
+        Console.WriteLine("[Test 9] Attempting login with NON-EXISTING user");
+        Console.WriteLine($"[Test 9] Email: {nonexistentEmail}");
+        Console.WriteLine($"[Test 9] Password: {randomPassword}");
+
+        // Payload for login with fake user
+        var loginPayload = new
+        {
+            email = nonexistentEmail,
+            password = randomPassword
+        };
+
+        Console.WriteLine("[Test 9] Login payload: " +
+            $"{JsonSerializer.Serialize(loginPayload)}");
+
+        // Perform login request
+        var loginResponse = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = loginPayload });
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 9] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 9] Login Body: {loginBody}");
+
+        // Expected: invalid credentials → 400 or 401
+        Assert.That(loginStatus, Is.EqualTo(400).Or.EqualTo(401),
+            $"Expected error for non-existing user, but got HTTP {loginStatus}\n{loginBody}");
+
+        Console.WriteLine("[Test 9] OK: Login correctly rejected for non-existing user.");
+    }
+
 
     [OneTimeTearDown]
     public async Task Teardown()
