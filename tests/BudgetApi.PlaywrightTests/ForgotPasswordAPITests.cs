@@ -80,6 +80,33 @@ public class ForgotPasswordAPITests
             $"Expected 200 for existing email, got HTTP {status}\n{body}");
     }
 
+    // Test 2(ForgotPassword): Forgot password should return 200 for non-existing email
+    [Test, Order(2)]
+    public async Task ForgotPassword_Should_Return_200_For_NonExisting_Email()
+    {
+        var email = $"fp_nonexisting_{Guid.NewGuid()}@example.com";
+
+        var payload = new
+        {
+            email
+        };
+
+        Console.WriteLine("[Test 2] Start: forgot-password for NON-existing email");
+        Console.WriteLine($"[Test 2] Payload: {JsonSerializer.Serialize(payload)}");
+
+        var response = await _request.PostAsync("/api/authentication/forgot-password",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 2] HTTP Status: {status}");
+        Console.WriteLine($"[Test 2] Body: {body}");
+
+        Assert.That(status, Is.EqualTo(200),
+            $"Expected 200 for non-existing email, got HTTP {status}\n{body}");
+    }
+
     [OneTimeTearDown]
     public async Task Teardown()
     {
