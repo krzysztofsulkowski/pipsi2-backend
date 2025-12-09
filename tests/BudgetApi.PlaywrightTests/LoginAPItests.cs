@@ -437,7 +437,63 @@ public class LoginAPITests
         Console.WriteLine("[Test 6] OK: Login rejected correctly with empty email AND password.");
     }
 
+    // Test 7(Login): registration attempt with empty fields should fail, and login should fail too
+    [Test, Order(7)]
+    public async Task Register_And_Login_Should_Fail_With_Empty_Email_And_Password()
+    {
+        // Payload with all empty fields for registration
+        var registrationPayload = new
+        {
+            email = "",
+            username = "",
+            password = ""
+        };
 
+        Console.WriteLine("[Test 7] Attempting registration with EMPTY email, username, and password");
+        Console.WriteLine($"[Test 7] Registration payload: {JsonSerializer.Serialize(registrationPayload)}");
+
+        // Try to register with empty email, username and password
+        var registerResponse = await _request.PostAsync("/api/authentication/register",
+            new() { DataObject = registrationPayload });
+
+        var regStatus = registerResponse.Status;
+        var regBody = await registerResponse.TextAsync();
+
+        Console.WriteLine($"[Test 7] Registration HTTP Status: {regStatus}");
+        Console.WriteLine($"[Test 7] Registration Body: {regBody}");
+
+        // Expected: registration MUST fail (validation error)
+        Assert.That(regStatus, Is.InRange(400, 499),
+            $"Expected registration to fail with empty fields, but got HTTP {regStatus}\n{regBody}");
+
+        Console.WriteLine("[Test 7] OK: Registration with empty fields correctly rejected.");
+
+        // Login payload also empty
+        var loginPayload = new
+        {
+            email = "",
+            password = ""
+        };
+
+        Console.WriteLine("[Test 7] Attempting login with EMPTY email and password");
+        Console.WriteLine($"[Test 7] Login payload: {JsonSerializer.Serialize(loginPayload)}");
+
+        // Attempt login
+        var loginResponse = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = loginPayload });
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 7] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 7] Login Body: {loginBody}");
+
+        // Login must also fail
+        Assert.That(loginStatus, Is.EqualTo(400).Or.EqualTo(401),
+            $"Expected login to fail with empty email and password, but got HTTP {loginStatus}\n{loginBody}");
+
+        Console.WriteLine("[Test 7] OK: Login with empty fields correctly rejected.");
+    }
 
     [OneTimeTearDown]
     public async Task Teardown()
