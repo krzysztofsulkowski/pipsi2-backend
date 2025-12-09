@@ -179,6 +179,31 @@ public class ForgotPasswordAPITests
             $"Expected validation error (400–499) for missing email field, got HTTP {status}\n{body}");
     }
 
+    // Test 6(ForgotPassword): Forgot password should return validation error when email is null
+    [Test, Order(6)]
+    public async Task ForgotPassword_Should_Return_Error_When_Email_Is_Null()
+    {
+        var payload = new
+        {
+            email = (string?)null
+        };
+
+        Console.WriteLine("[Test 6] Start: forgot-password with NULL email");
+        Console.WriteLine($"[Test 6] Payload: {JsonSerializer.Serialize(payload)}");
+
+        var response = await _request.PostAsync("/api/authentication/forgot-password",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 6] HTTP Status: {status}");
+        Console.WriteLine($"[Test 6] Body: {body}");
+
+        Assert.That(status, Is.InRange(400, 499),
+            $"Expected validation error (400–499) for null email, got HTTP {status}\n{body}");
+    }
+
 
     [OneTimeTearDown]
     public async Task Teardown()
