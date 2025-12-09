@@ -19,6 +19,6 @@ namespace budget_api.Services.Interfaces
         Task<ServiceResult<DataTableResponse<TransactionListItemDto>>> SearchTransactionsAsync(int budgetId, DataTableRequest request, string userId);
         Task<ServiceResult<List<TransactionListItemDto>>> GetTransactionsForStatsAsync(int budgetId, int year, int month);
 
-        Task ProcessRecurringAndPlannedExpensesAsync();
+        Task<ServiceResult> ProcessRecurringAndPlannedExpensesAsync();
     }
 }
