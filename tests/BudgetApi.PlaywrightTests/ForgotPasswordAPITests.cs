@@ -132,6 +132,53 @@ public class ForgotPasswordAPITests
             $"Expected validation error (400–499) for empty email, got HTTP {status}\n{body}");
     }
 
+    // Test 4(ForgotPassword): Forgot password should return validation error for invalid email format
+    [Test, Order(4)]
+    public async Task ForgotPassword_Should_Return_Error_For_Invalid_Email_Format()
+    {
+        var payload = new
+        {
+            email = "not-an-email"
+        };
+
+        Console.WriteLine("[Test 4] Start: forgot-password with INVALID email format");
+        Console.WriteLine($"[Test 4] Payload: {JsonSerializer.Serialize(payload)}");
+
+        var response = await _request.PostAsync("/api/authentication/forgot-password",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 4] HTTP Status: {status}");
+        Console.WriteLine($"[Test 4] Body: {body}");
+
+        Assert.That(status, Is.InRange(400, 499),
+            $"Expected validation error (400–499) for invalid email format, got HTTP {status}\n{body}");
+    }
+
+    // Test 5(ForgotPassword): Forgot password should return validation error when email field is missing
+    [Test, Order(5)]
+    public async Task ForgotPassword_Should_Return_Error_When_Email_Is_Missing()
+    {
+        var payload = new { };
+
+        Console.WriteLine("[Test 5] Start: forgot-password with MISSING email field");
+        Console.WriteLine("[Test 5] Payload: {} (email field not included)");
+
+        var response = await _request.PostAsync("/api/authentication/forgot-password",
+            new() { DataObject = payload });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 5] HTTP Status: {status}");
+        Console.WriteLine($"[Test 5] Body: {body}");
+
+        Assert.That(status, Is.InRange(400, 499),
+            $"Expected validation error (400–499) for missing email field, got HTTP {status}\n{body}");
+    }
+
 
     [OneTimeTearDown]
     public async Task Teardown()
