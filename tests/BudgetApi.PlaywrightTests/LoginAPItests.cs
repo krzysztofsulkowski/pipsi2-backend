@@ -129,6 +129,73 @@ public class LoginAPITests
         Console.WriteLine("[Test 1] OK: Login succeeded for registered user.");
     }
 
+    // Test 2(Login): should return error when password is incorrect
+    [Test, Order(2)]
+    public async Task Login_Should_Return_Error_When_Password_Is_Wrong()
+    {
+        // Generate test credentials
+        var email = $"loginwrong_{Guid.NewGuid()}@example.com";
+        var username = $"user_{Guid.NewGuid():N}".Substring(0, 12);
+
+        // Correct password for registration
+        var correctPassword = $"P@ss{Guid.NewGuid():N}".Substring(0, 12);
+
+        // Wrong password used for login attempt
+        var wrongPassword = "Invalid123!";
+
+        // Payload for registration
+        var registrationPayload = new
+        {
+            email,
+            username,
+            password = correctPassword
+        };
+
+        Console.WriteLine("[Test 2] Registering test user for incorrect password test");
+        Console.WriteLine($"[Test 2] Registration payload: {JsonSerializer.Serialize(registrationPayload)}");
+
+        // Register the user
+        var registerResponse = await _request.PostAsync("/api/authentication/register",
+            new() { DataObject = registrationPayload });
+
+        var regStatus = registerResponse.Status;
+        var regBody = await registerResponse.TextAsync();
+
+        Console.WriteLine($"[Test 2] Registration HTTP Status: {regStatus}");
+        Console.WriteLine($"[Test 2] Registration Body: {regBody}");
+
+        // Registration must succeed
+        Assert.That(regStatus, Is.InRange(200, 299),
+            $"User registration failed unexpectedly before wrong-password test:\nHTTP {regStatus}\n{regBody}");
+
+        // Payload for login with WRONG password
+        var loginPayload = new
+        {
+            email,
+            password = wrongPassword
+        };
+
+        Console.WriteLine("[Test 2] Attempting login with WRONG password");
+        Console.WriteLine($"[Test 2] Login payload: {JsonSerializer.Serialize(loginPayload)}");
+
+        // Perform login
+        var loginResponse = await _request.PostAsync("/api/authentication/login",
+            new() { DataObject = loginPayload });
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 2] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 2] Login Body: {loginBody}");
+
+        // Expected: 400 or 401 for invalid credentials
+        Assert.That(loginStatus, Is.EqualTo(400).Or.EqualTo(401),
+            $"Expected error for wrong password, got HTTP {loginStatus}\n{loginBody}");
+
+        Console.WriteLine("[Test 2] OK: Login rejected correctly with wrong password.");
+    }
+
+
     [OneTimeTearDown]
     public async Task Teardown()
     {
