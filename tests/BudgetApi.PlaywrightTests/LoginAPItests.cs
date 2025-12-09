@@ -10,13 +10,7 @@ public class LoginAPITests
     private IPlaywright _playwright = null!;
     private IAPIRequestContext _request = null!;
 
-    // Backend port
-    private const string Port = "64052";
-
-    // HTTPS + HTTP fallback
-    private const string HttpsUrl = $"https://localhost:{Port}";
-    private const string HttpUrl = $"http://localhost:{Port}";
-    private string _baseUrl = HttpsUrl;
+    private string _baseUrl = TestBackendConfig.HttpsUrl;
 
     [OneTimeSetUp]
     public async Task Setup()
@@ -73,7 +67,8 @@ public class LoginAPITests
 
             // Switch to HTTP
             await _request.DisposeAsync();
-            _baseUrl = HttpUrl;
+            _baseUrl = TestBackendConfig.HttpUrl;
+
 
             _request = await _playwright.APIRequest.NewContextAsync(new()
             {

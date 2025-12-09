@@ -9,10 +9,8 @@ public class RegistrationAPITests
 {
     private IPlaywright _playwright = null!;
     private IAPIRequestContext _request = null!;
-    private const string Port = "55155";
-    private const string HttpsUrl = $"https://localhost:{Port}";
-    private const string HttpUrl = $"http://localhost:{Port}";
-    private string _baseUrl = HttpsUrl;
+    private string _baseUrl = TestBackendConfig.HttpsUrl;
+
 
     private const string Password = "Test123!@#";
 
@@ -192,7 +190,7 @@ public class RegistrationAPITests
             Console.WriteLine("[Test 4] Retrying on HTTP...");
 
             await _request.DisposeAsync();
-            _baseUrl = HttpUrl;
+            _baseUrl = TestBackendConfig.HttpUrl;
 
             _request = await _playwright.APIRequest.NewContextAsync(new()
             {
@@ -254,7 +252,7 @@ public class RegistrationAPITests
             Console.WriteLine("[Test 5] Retrying on HTTP...");
 
             await _request.DisposeAsync();
-            _baseUrl = HttpUrl;
+            _baseUrl = TestBackendConfig.HttpUrl;
 
             _request = await _playwright.APIRequest.NewContextAsync(new()
             {
