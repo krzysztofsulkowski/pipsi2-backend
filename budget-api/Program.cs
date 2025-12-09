@@ -195,10 +195,10 @@ using (var scope = app.Services.CreateScope())
 
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    //recurringJobManager.AddOrUpdate<eNotificationService>(
-    //    "CheckAndSendExpirationNotifications",
-    //    service => service.SendEmailNotifications(),
-    //    Cron.Daily);
+    recurringJobManager.AddOrUpdate<TransactionService>(
+        "CheckAndSendNotifications",
+        service => service.ProcessRecurringAndPlannedExpensesAsync(),
+        Cron.Daily);
 }
 
 app.Run();
