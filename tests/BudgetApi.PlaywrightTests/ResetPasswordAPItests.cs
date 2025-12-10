@@ -218,6 +218,36 @@ public class ResetPasswordAPITests
         Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
     }
 
+    // Test 5(ResetPassword): Reset password should fail when email does not exist
+    [Test, Order(5)]
+    public async Task ResetPassword_WithNonExistingEmail_ReturnsError()
+    {
+        var nonExistingEmail = "nonexistinguser_balancr@test.local";
+
+        var newPassword = $"NoweHaslo123!{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}Y1";
+
+        var resetBody = new
+        {
+            Email = nonExistingEmail,
+            Token = "invalid-or-foreign-token",
+            NewPassword = newPassword
+        };
+
+        var resetResponse = await _request.PostAsync("/api/authentication/reset-password", new()
+        {
+            Data = JsonSerializer.Serialize(resetBody)
+        });
+
+        var resetStatus = resetResponse.Status;
+        var resetResponseBody = await resetResponse.TextAsync();
+
+        Console.WriteLine($"[Test 5] Reset-password HTTP Status: {resetStatus}");
+        Console.WriteLine($"[Test 5] Reset-password Body: {resetResponseBody}");
+
+        Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
+    }
+
+
     [OneTimeTearDown]
     public async Task TearDown()
     {
