@@ -138,6 +138,34 @@ public class ResetPasswordAPITests
         Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
     }
 
+    // Test 3(ResetPassword): Reset password should fail when token is null or empty
+    [Test, Order(3)]
+    public async Task ResetPassword_WithMissingToken_ReturnsError()
+    {
+        string? missingToken = null;
+
+        var newPassword = $"NoweHaslo123!{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}X1";
+
+        var resetBody = new
+        {
+            Email = TestUserEmail,
+            Token = missingToken,
+            NewPassword = newPassword
+        };
+
+        var resetResponse = await _request.PostAsync("/api/authentication/reset-password", new()
+        {
+            Data = JsonSerializer.Serialize(resetBody)
+        });
+
+        var resetStatus = resetResponse.Status;
+        var resetResponseBody = await resetResponse.TextAsync();
+
+        Console.WriteLine($"[Test 3] Reset-password HTTP Status: {resetStatus}");
+        Console.WriteLine($"[Test 3] Reset-password Body: {resetResponseBody}");
+
+        Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
+    }
 
 
     [OneTimeTearDown]
