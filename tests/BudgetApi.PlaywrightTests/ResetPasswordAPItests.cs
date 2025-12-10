@@ -31,6 +31,7 @@ public class ResetPasswordAPITests
         });
     }
 
+    // Test 1(ResetPassword): Reset password using full reset link from config and verify login with new password succeeds
     [Test, Order(1)]
     public async Task ResetPassword_UsingFullLinkFromConfig_ThenLoginWithNewPassword()
     {
@@ -107,6 +108,37 @@ public class ResetPasswordAPITests
 
         Assert.That(loginStatus, Is.EqualTo(200));
     }
+
+    // Test 2(ResetPassword): Reset password should fail when invalid token is provided
+    [Test, Order(2)]
+    public async Task ResetPassword_WithInvalidToken_ReturnsError()
+    {
+        var invalidToken = $"invalid-token-{Guid.NewGuid()}";
+
+        var newPassword = $"HasloTestowe!{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}A1";
+
+        var resetBody = new
+        {
+            Email = TestUserEmail,
+            Token = invalidToken,
+            NewPassword = newPassword
+        };
+
+        var resetResponse = await _request.PostAsync("/api/authentication/reset-password", new()
+        {
+            Data = JsonSerializer.Serialize(resetBody)
+        });
+
+        var resetStatus = resetResponse.Status;
+        var resetResponseBody = await resetResponse.TextAsync();
+
+        Console.WriteLine($"[Test 2] Reset-password HTTP Status: {resetStatus}");
+        Console.WriteLine($"[Test 2] Reset-password Body: {resetResponseBody}");
+
+        Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
+    }
+
+
 
     [OneTimeTearDown]
     public async Task TearDown()
