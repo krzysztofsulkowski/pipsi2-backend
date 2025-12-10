@@ -27,12 +27,12 @@ public class ExternalLoginAPITests
         });
     }
 
-    // Test 1(ExternalLogin): External login should return 200 and non-empty response for Facebook provider and valid returnUrl
+    // Test 1(ExternalLogin): External login should return redirect (3xx) for Facebook provider and valid returnUrl
     [Test, Order(1)]
-    public async Task ExternalLogin_Facebook_WithValidReturnUrl_Returns200()
+    public async Task ExternalLogin_Facebook_WithValidReturnUrl_ReturnsRedirect()
     {
         var provider = "Facebook";
-        var returnUrl = "https://localhost:3000";
+        var returnUrl = "https://localhost:3000/login";
 
         var response = await _request.GetAsync("/api/authentication/external-login", new()
         {
@@ -40,16 +40,21 @@ public class ExternalLoginAPITests
         {
             { "provider", provider },
             { "returnUrl", returnUrl }
-        }
+        },
+            MaxRedirects = 0
         });
 
         var status = response.Status;
-        var body = await response.TextAsync();
+        var headers = response.Headers;
 
         Console.WriteLine($"[Test 1] External-login HTTP Status: {status}");
+        Console.WriteLine("[Test 1] External-login headers:");
+        foreach (var header in headers)
+        {
+            Console.WriteLine($"[Test 1]   {header.Key}: {header.Value}");
+        }
 
-        Assert.That(status, Is.EqualTo(200));
-        Assert.That(string.IsNullOrWhiteSpace(body), Is.False);
+        Assert.That((int)status, Is.InRange(300, 399));
     }
 
     [OneTimeTearDown]
