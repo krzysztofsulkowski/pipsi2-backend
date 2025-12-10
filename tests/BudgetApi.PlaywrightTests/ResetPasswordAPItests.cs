@@ -247,6 +247,68 @@ public class ResetPasswordAPITests
         Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
     }
 
+    // Test 6(ResetPassword): Reset password should fail when using a valid token with a different email than the one it was generated for
+    [Test, Order(6)]
+    public async Task ResetPassword_WithValidTokenAndDifferentEmail_ReturnsError()
+    {
+        var fullLink = TestBackendConfig.ResetPasswordFullLink;
+
+        if (string.IsNullOrWhiteSpace(fullLink))
+        {
+            Assert.Fail("TestBackendConfig.ResetPasswordFullLink is empty.");
+        }
+
+        Console.WriteLine($"[Test 6] Full reset link from config: {fullLink}");
+
+        string encodedToken;
+
+        if (fullLink.Contains("token="))
+        {
+            var start = fullLink.IndexOf("token=") + "token=".Length;
+            var end = fullLink.IndexOf("&", start);
+            if (end == -1) end = fullLink.Length;
+            encodedToken = fullLink.Substring(start, end - start);
+        }
+        else
+        {
+            Assert.Fail("token= not found in ResetPasswordFullLink.");
+            return;
+        }
+
+        Console.WriteLine($"[Test 6] Encoded token: {encodedToken}");
+
+        var decodedToken = WebUtility.UrlDecode(encodedToken);
+
+        Console.WriteLine($"[Test 6] Decoded token length: {decodedToken.Length}");
+
+        var otherEmail = "differentuser_balancr@test.local";
+
+        var newPassword = $"NoweHaslo123!{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}Z1";
+
+        Console.WriteLine($"[Test 6] New password candidate: {newPassword}");
+        Console.WriteLine($"[Test 6] Email used with foreign token: {otherEmail}");
+
+        var resetBody = new
+        {
+            Email = otherEmail,
+            Token = decodedToken,
+            NewPassword = newPassword
+        };
+
+        var resetResponse = await _request.PostAsync("/api/authentication/reset-password", new()
+        {
+            Data = JsonSerializer.Serialize(resetBody)
+        });
+
+        var resetStatus = resetResponse.Status;
+        var resetResponseBody = await resetResponse.TextAsync();
+
+        Console.WriteLine($"[Test 6] Reset-password HTTP Status: {resetStatus}");
+        Console.WriteLine($"[Test 6] Reset-password Body: {resetResponseBody}");
+
+        Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
+    }
+
 
     [OneTimeTearDown]
     public async Task TearDown()
