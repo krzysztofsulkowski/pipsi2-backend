@@ -124,5 +124,13 @@ namespace budget_api.Controllers
             var result = await _transactionService.DeleteExpenseAsync(budgetId, expenseId, userId);
             return HandleServiceResult(result);
         }
+
+        //[HttpGet("run-recurrent-job")]  //do testów
+        //public async Task<IActionResult> RunRecurrentJobTest() 
+        //{
+        //    var result = await _transactionService.ProcessRecurringAndPlannedExpensesAsync();
+
+        //    return HandleServiceResult(result);
+        //}
     }
 }

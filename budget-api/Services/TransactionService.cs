@@ -4,6 +4,7 @@ using budget_api.Models.Dto;
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq.Dynamic.Core;
 
 namespace budget_api.Services
@@ -253,7 +254,7 @@ namespace budget_api.Services
                 if (model.Amount > available)
                     return ServiceResult.Failure("Zmiana wartości wydatku spowoduje ujemne saldo budżetu. Operacja odrzucona.");
 
-                if(model.ExpenseType == ExpenseStatus.Instant)
+                if (model.ExpenseType == ExpenseStatus.Instant)
                 {
                     model.Frequency = null;
                     model.EndDate = null;
@@ -432,114 +433,143 @@ namespace budget_api.Services
             }
         }
 
-        public async Task ProcessRecurringAndPlannedExpensesAsync()
+        public async Task<ServiceResult> ProcessRecurringAndPlannedExpensesAsync()
         {
             var today = DateTime.UtcNow.Date;
 
-            var potentialExpenses = await _context.BudgetTransactions
-                .Include(t => t.User) 
-                .Include(t => t.Category) 
-                .Where(t => t.Type == TransactionType.Expense) 
-                .Where(t => t.Status == ExpenseStatus.Recurring || t.Status == ExpenseStatus.Planned) 
-                .Where(t => t.EndDate == null || t.EndDate.Value.Date >= today) 
-                .Where(t => t.Date.Date <= today) 
-                .OrderBy(t => t.BudgetId)
-                .ToListAsync();
-
-            var balanceCache = new Dictionary<int, decimal>();
-
-            foreach (var expense in potentialExpenses)
+            try
             {
-                try
+                var potentialExpenses = await _context.BudgetTransactions
+                    .Include(t => t.User)
+                    .Include(t => t.Category)
+                    .Where(t => t.Type == TransactionType.Expense)
+                    .Where(t => t.Status == ExpenseStatus.Recurring || t.Status == ExpenseStatus.Planned)
+                    .Where(t => t.EndDate == null || t.EndDate.Value.Date >= today)
+                    .Where(t => t.Date.Date <= today)
+                    .OrderBy(t => t.BudgetId)
+                    .ToListAsync();
+
+                var distinctBudgetIds = potentialExpenses.Select(e => e.BudgetId).Distinct().ToList();
+
+                var budgetNamesMap = await _context.Budgets
+                    .Where(b => distinctBudgetIds.Contains(b.Id))
+                    .Select(b => new { b.Id, b.Name })
+                    .ToDictionaryAsync(k => k.Id, v => v.Name);
+
+                var balanceCache = new Dictionary<int, decimal>();
+
+                foreach (var expense in potentialExpenses)
                 {
-                    if (!balanceCache.ContainsKey(expense.BudgetId))
+                    try
                     {
-                        balanceCache[expense.BudgetId] = await ComputeBalanceAsync(expense.BudgetId);
-                    }
-
-                    var currentBalance = balanceCache[expense.BudgetId];
-                    var requiredAmount = expense.Amount;
-                    var expenseCreatorEmail = expense.User?.Email ?? throw new InvalidOperationException($"Użytkownik {expense.CreatedByUserId} nie ma zdefiniowanego adresu e-mail.");
-
-                    if (requiredAmount > currentBalance)
-                    {
-                        await _emailService.SendRecurrentExpenseFailedNotificationAsync(
-                            expenseCreatorEmail,
-                            expense.Title,
-                            expense.Title,
-                            expense.Amount,
-                            "Brak wystarczających środków na koncie w budżecie.");
-
-                        if (expense.Status == ExpenseStatus.Planned)
+                        if (!balanceCache.ContainsKey(expense.BudgetId))
                         {
-                            expense.Date = today.AddDays(1);
+                            balanceCache[expense.BudgetId] = await ComputeBalanceAsync(expense.BudgetId);
+                        }
+
+                        var currentBalance = balanceCache[expense.BudgetId];
+
+                        var budgetName = budgetNamesMap.ContainsKey(expense.BudgetId)
+                           ? budgetNamesMap[expense.BudgetId]
+                           : "Budżet";
+
+                        var requiredAmount = expense.Amount;
+                        var expenseCreatorEmail = expense.User?.Email;
+
+                        if (string.IsNullOrEmpty(expenseCreatorEmail))
+                        {
+                            _logger.LogError("Użytkownik {UserId} dla wydatku {ExpenseId} nie ma adresu e-mail.", expense.CreatedByUserId, expense.Id);
+                            continue; 
+                        }
+
+                        if (requiredAmount > currentBalance)
+                        {
+                            await _emailService.SendRecurrentExpenseFailedNotificationAsync(
+                                expenseCreatorEmail,
+                                budgetName,
+                                expense.Title,
+                                expense.Amount,
+                                "Brak wystarczających środków na koncie w budżecie.");
+
+                            if (expense.Status == ExpenseStatus.Planned)
+                            {
+                                expense.Date = today.AddDays(1);
+                                _context.BudgetTransactions.Update(expense);
+                            }
+
+                            await _context.SaveChangesAsync();
+
+                            _logger.LogWarning("Job: Nie wykonano wydatku '{Title}' ({Amount}) dla budżetu {BudgetId} - niewystarczające środki. Bilans: {Balance}", expense.Title, expense.Amount, expense.BudgetId, currentBalance);
+                            continue;
+                        }
+
+                        BudgetTransaction transactionToProcess = expense;
+
+                        if (expense.Status == ExpenseStatus.Recurring)
+                        {
+                            transactionToProcess = new BudgetTransaction
+                            {
+                                BudgetId = expense.BudgetId,
+                                Title = expense.Title,
+                                Amount = expense.Amount,
+                                Date = today.AddHours(DateTime.UtcNow.Hour).AddMinutes(DateTime.UtcNow.Minute),
+                                Type = TransactionType.Expense,
+                                CategoryId = expense.CategoryId,
+                                PaymentMethod = expense.PaymentMethod,
+                                Status = ExpenseStatus.Instant,
+                                CreatedAt = DateTime.UtcNow,
+                                CreatedByUserId = expense.CreatedByUserId
+                            };
+                            await _context.BudgetTransactions.AddAsync(transactionToProcess);
+
+                            expense.Date = GetNextDate(expense);
+                            _context.BudgetTransactions.Update(expense);
+                        }
+                        else if (expense.Status == ExpenseStatus.Planned)
+                        {
+                            expense.Status = ExpenseStatus.Instant;
+                            expense.Date = today.AddHours(DateTime.UtcNow.Hour).AddMinutes(DateTime.UtcNow.Minute);
+                            expense.Frequency = null;
+                            expense.EndDate = null;
                             _context.BudgetTransactions.Update(expense);
                         }
 
-                        _logger.LogWarning("Job: Nie wykonano wydatku '{Title}' ({Amount}) dla budżetu {BudgetId} - niewystarczające środki. Bilans: {Balance}", expense.Title, expense.Amount, expense.BudgetId, currentBalance);
-                        continue;
+                        await _context.SaveChangesAsync();
+                        balanceCache[expense.BudgetId] -= requiredAmount;
+
+                        await _emailService.SendRecurrentExpenseSuccessNotificationAsync(
+                            expenseCreatorEmail,
+                            budgetName,
+                            transactionToProcess.Title,
+                            transactionToProcess.Amount);
                     }
-
-                    BudgetTransaction transactionToProcess = expense; 
-
-                    if (expense.Status == ExpenseStatus.Recurring)
+                    catch (Exception ex)
                     {
-                        transactionToProcess = new BudgetTransaction
-                        {
-                            BudgetId = expense.BudgetId,
-                            Title = expense.Title,
-                            Amount = expense.Amount,
-                            Date = today.AddHours(DateTime.UtcNow.Hour).AddMinutes(DateTime.UtcNow.Minute),
-                            Type = TransactionType.Expense,
-                            CategoryId = expense.CategoryId,
-                            PaymentMethod = expense.PaymentMethod,
-                            Status = ExpenseStatus.Instant, 
-                            CreatedAt = DateTime.UtcNow,
-                            CreatedByUserId = expense.CreatedByUserId
-                        };
-
-                        await _context.BudgetTransactions.AddAsync(transactionToProcess);
-
-                        expense.Date = GetNextDate(expense); 
-                        _context.BudgetTransactions.Update(expense);
+                        _logger.LogError(ex, "Błąd podczas przetwarzania transakcji joba {ExpenseId} dla budżetu {BudgetId}", expense.Id, expense.BudgetId);
                     }
-                    else if (expense.Status == ExpenseStatus.Planned)
-                    {
-                        expense.Status = ExpenseStatus.Instant;
-                        expense.Date = today.AddHours(DateTime.UtcNow.Hour).AddMinutes(DateTime.UtcNow.Minute); 
-                        expense.Frequency = null;
-                        expense.EndDate = null;
-                        _context.BudgetTransactions.Update(expense);
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    balanceCache[expense.BudgetId] -= requiredAmount;
-
-                    await _emailService.SendRecurrentExpenseSuccessNotificationAsync(
-                        expenseCreatorEmail,
-                        "Twój budżet", 
-                        transactionToProcess.Title,
-                        transactionToProcess.Amount);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Błąd podczas przetwarzania transakcji joba {ExpenseId} dla budżetu {BudgetId}", expense.Id, expense.BudgetId);
                 }
             }
-
-            DateTime GetNextDate(BudgetTransaction transaction)
+            catch (Exception ex)
             {
-                DateTime lastDate = transaction.Date;
-                return transaction.Frequency switch
-                {
-                    Frequency.Weekly => lastDate.AddDays(7),
-                    Frequency.BiWeekly => lastDate.AddDays(14),
-                    Frequency.Monthly => lastDate.AddMonths(1),
-                    Frequency.Yearly => lastDate.AddYears(1),
-                    _ => lastDate.AddMonths(1)
-                };
+                _logger.LogError(ex, "Krytyczny błąd Joba przetwarzającego wydatki cykliczne/planowane.");
+                return ServiceResult.Failure("Krytyczny błąd podczas pracy joba: " + ex.Message);
             }
+
+            return ServiceResult.Success();
+        }
+
+        DateTime GetNextDate(BudgetTransaction transaction)
+        {
+            DateTime lastDate = transaction.Date;
+            return transaction.Frequency switch
+            {
+                Frequency.Weekly => lastDate.AddDays(7),
+                Frequency.BiWeekly => lastDate.AddDays(14),
+                Frequency.Monthly => lastDate.AddMonths(1),
+                Frequency.Yearly => lastDate.AddYears(1),
+                _ => lastDate.AddMonths(1)
+            };
         }
     }
 }
+
