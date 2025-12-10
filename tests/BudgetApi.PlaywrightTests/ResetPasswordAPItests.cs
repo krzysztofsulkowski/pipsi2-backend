@@ -167,6 +167,56 @@ public class ResetPasswordAPITests
         Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
     }
 
+    // Test 4(ResetPassword): Reset password should fail when the new password is too weak
+    [Test, Order(4)]
+    public async Task ResetPassword_WithWeakPassword_ReturnsError()
+    {
+        var fullLink = TestBackendConfig.ResetPasswordFullLink;
+
+        if (string.IsNullOrWhiteSpace(fullLink))
+        {
+            Assert.Fail("TestBackendConfig.ResetPasswordFullLink is empty.");
+        }
+
+        string encodedToken;
+
+        if (fullLink.Contains("token="))
+        {
+            var start = fullLink.IndexOf("token=") + "token=".Length;
+            var end = fullLink.IndexOf("&", start);
+            if (end == -1) end = fullLink.Length;
+            encodedToken = fullLink.Substring(start, end - start);
+        }
+        else
+        {
+            Assert.Fail("token= not found in ResetPasswordFullLink.");
+            return;
+        }
+
+        var decodedToken = WebUtility.UrlDecode(encodedToken);
+
+        var weakPassword = "haslo"; // too weak: no uppercase, no digit, no special character, too short
+
+        var resetBody = new
+        {
+            Email = TestUserEmail,
+            Token = decodedToken,
+            NewPassword = weakPassword
+        };
+
+        var resetResponse = await _request.PostAsync("/api/authentication/reset-password", new()
+        {
+            Data = JsonSerializer.Serialize(resetBody)
+        });
+
+        var resetStatus = resetResponse.Status;
+        var resetResponseBody = await resetResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] Reset-password HTTP Status: {resetStatus}");
+        Console.WriteLine($"[Test 4] Reset-password Body: {resetResponseBody}");
+
+        Assert.That((int)resetStatus, Is.GreaterThanOrEqualTo(400));
+    }
 
     [OneTimeTearDown]
     public async Task TearDown()
