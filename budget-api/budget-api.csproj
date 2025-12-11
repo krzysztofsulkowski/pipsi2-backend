@@ -35,6 +35,12 @@
     <None Update="Templates\ForgotPasswordEmail.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Templates\RecurrentExpenseFailure.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\RecurrentExpenseSuccess.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Templates\SharedBudgetInvitationExistingUser.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

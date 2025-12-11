@@ -52,35 +52,24 @@ namespace budget_api.Models.Dto
         public string? ReceiptImageUrl { get; set; }
         public Frequency? Frequency { get; set; }
         public DateTime? StartDate { get; set; }
-        public DateTime? PlannedDate { get; set; }
         public DateTime? EndDate { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (ExpenseType == ExpenseStatus.Recurring)
-            {
-                if (Frequency == null)
+            if (ExpenseType == ExpenseStatus.Recurring || ExpenseType == ExpenseStatus.Planned)
+            {                
+                if (StartDate == null)
+                {
+                    yield return new ValidationResult(
+                        "Dla transakcji cyklicznej/planowanej wymagane jest podanie Daty Rozpoczęcia",
+                        new[] { nameof(StartDate) });
+                }
+
+                if (ExpenseType == ExpenseStatus.Recurring && Frequency == null)
                 {
                     yield return new ValidationResult(
                         "Częstotliwość jest wymagana dla wydatku cyklicznego.",
                         new[] { nameof(Frequency) });
-                }
-
-                if (StartDate == null)
-                {
-                    yield return new ValidationResult(
-                        "Data rozpoczęcia jest wymagana dla wydatku cyklicznego.",
-                        new[] { nameof(StartDate) });
-                }
-            }
-
-            if (ExpenseType == ExpenseStatus.Planned)
-            {
-                if (PlannedDate == null)
-                {
-                    yield return new ValidationResult(
-                        "Data realizacji jest wymagana dla wydatku planowanego.",
-                        new[] { nameof(PlannedDate) });
                 }
             }
         }
