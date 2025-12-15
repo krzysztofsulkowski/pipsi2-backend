@@ -5,7 +5,7 @@ using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using budget_api.Services.Errors;
+using budget_api.Services.Errors; // Import błędów
 
 namespace budget_api.Services
 {
@@ -15,6 +15,9 @@ namespace budget_api.Services
         private readonly ILogger<UserManagementService> _logger;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+
+        private const string ObjectName = "User";
+
         public UserManagementService(BudgetApiDbContext context, ILogger<UserManagementService> logger, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _context = context;
@@ -64,7 +67,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching users with roles: {ErrorDetails}", ex.ToString());
-                return ServiceResult<DataTableResponse<UserDto>>.Failure(CommonErrors.DataProcessingError());
+                return ServiceResult<DataTableResponse<UserDto>>.Failure(CommonErrors.DataProcessingError("Błąd pobierania listy użytkowników."));
             }
         }
 
@@ -75,11 +78,10 @@ namespace budget_api.Services
             {
                 var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
-                    return ServiceResult.Failure("User not found");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, userId));
 
                 await _userManager.SetLockoutEnabledAsync(user, true);
-
-                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue); 
 
                 _logger.LogInformation("User {UserId} locked permanently", userId);
                 return ServiceResult.Success();
@@ -87,7 +89,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error permanently locking user {UserId}", userId);
-                return ServiceResult.Failure($"Failed to lock user: {ex.Message}");
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ObjectName, userId, "Błąd blokowania konta."));
             }
         }
 
@@ -97,7 +99,7 @@ namespace budget_api.Services
             {
                 var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
-                    return ServiceResult.Failure("User not found");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, userId));
 
                 await _userManager.SetLockoutEndDateAsync(user, null);
 
@@ -107,7 +109,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error unlocking user {UserId}", userId);
-                return ServiceResult.Failure($"Failed to unlock user: {ex.Message}");
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ObjectName, userId, "Błąd odblokowania konta."));
             }
         }
 
@@ -115,28 +117,29 @@ namespace budget_api.Services
         {
             if (string.IsNullOrWhiteSpace(user.Email))
             {
-                return ServiceResult<UserDto>.Failure("Adres e-mail jest wymagany.");
+                return ServiceResult<UserDto>.Failure(AuthErrors.EmailRequired());
             }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var existingUserByEmail = await _userManager.FindByEmailAsync(user.Email);
                 if (existingUserByEmail != null)
-                    return ServiceResult<UserDto>.Failure($"User {user.Email} already exists");
+                    return ServiceResult<UserDto>.Failure(AuthErrors.UserAlreadyExists());
 
                 var role = await _context.Roles.FindAsync(user.RoleId);
                 if (role == null)
-                    return ServiceResult<UserDto>.Failure($"Role with ID {user.RoleId} not found");
+                    return ServiceResult<UserDto>.Failure(UserManagementErrors.RoleNotFound(user.RoleId));
 
                 if (string.IsNullOrEmpty(role.Name))
-                    return ServiceResult<UserDto>.Failure($"Role with ID {user.RoleId} has no name specified");
+                    return ServiceResult<UserDto>.Failure(UserManagementErrors.RoleNotFound(user.RoleId)); 
 
                 if (role.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!currentUser.IsInRole("Administrator"))
+                    if (currentUser == null || !currentUser.IsInRole("Administrator"))
                     {
-                        _logger.LogWarning("Użytkownik {UserName} bez uprawnień próbował utworzyć konto administratora.", currentUser.Identity.Name);
-                        return ServiceResult<UserDto>.Failure("Brak uprawnień. Tylko administratorzy mogą tworzyć konta innych administratorów.");
+                        _logger.LogWarning("Użytkownik bez uprawnień próbował utworzyć admina.");
+                        return ServiceResult<UserDto>.Failure(UserManagementErrors.CannotCreateAdminWithoutPrivileges());
                     }
                 }
 
@@ -151,16 +154,16 @@ namespace budget_api.Services
                 if (!createResult.Succeeded)
                 {
                     var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                    _logger.LogError("Failed to create user: {Errors}", errors);
-                    return ServiceResult<UserDto>.Failure($"Failed to create user: {errors}");
+                    _logger.LogError("CreateAsync failed: {Errors}", errors);
+                    return ServiceResult<UserDto>.Failure(UserManagementErrors.CreateFailed(errors));
                 }
 
                 var roleResult = await _userManager.AddToRoleAsync(newUser, role.Name);
                 if (!roleResult.Succeeded)
                 {
+                    await transaction.RollbackAsync();
                     var errors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
-                    _logger.LogError("Failed to add user to role: {Errors}", errors);
-                    return ServiceResult<UserDto>.Failure($"Failed to add user to role: {errors}");
+                    return ServiceResult<UserDto>.Failure(UserManagementErrors.UpdateFailed("Nie udało się przypisać roli: " + errors));
                 }
 
                 await transaction.CommitAsync();
@@ -172,38 +175,34 @@ namespace budget_api.Services
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error creating user {Email}", user.Email);
-                return ServiceResult<UserDto>.Failure($"Failed to save user: {ex.Message}");
+                return ServiceResult<UserDto>.Failure(CommonErrors.InternalServerError("Błąd zapisu nowego użytkownika."));
             }
         }
-
 
         public async Task<ServiceResult> UpdateUser(UserDto model)
         {
             if (string.IsNullOrWhiteSpace(model.Email))
             {
-                return ServiceResult.Failure("Adres e-mail jest wymagany.");
+                return ServiceResult.Failure(AuthErrors.EmailRequired());
             }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var user = await _userManager.FindByIdAsync(model.UserId);
                 if (user == null)
-                    return ServiceResult.Failure("User not found");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, model.UserId));
 
                 var role = await _context.Roles.FindAsync(model.RoleId);
                 if (role == null)
-                    return ServiceResult.Failure($"Role with ID {model.RoleId} not found");
-
-                if (string.IsNullOrEmpty(role.Name))
-                    return ServiceResult.Failure($"Role with ID {model.RoleId} has no name specified");
+                    return ServiceResult.Failure(UserManagementErrors.RoleNotFound(model.RoleId));
 
                 if (!string.Equals(user.Email, model.Email, StringComparison.OrdinalIgnoreCase))
                 {
                     var existingUserWithNewEmail = await _userManager.FindByEmailAsync(model.Email);
                     if (existingUserWithNewEmail != null && existingUserWithNewEmail.Id != user.Id)
                     {
-                        _logger.LogWarning("UpdateUser: Attempt to update user {UserId} with email '{NewEmail}' which is already in use by user {ExistingUserId}.", user.Id, model.Email, existingUserWithNewEmail.Id);
-                        return ServiceResult.Failure($"Email '{model.Email}' is already in use by another user.");
+                        return ServiceResult.Failure(AuthErrors.UserAlreadyExists());
                     }
                     user.Email = model.Email;
                 }
@@ -214,8 +213,7 @@ namespace budget_api.Services
                 if (!updateResult.Succeeded)
                 {
                     var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
-                    _logger.LogError("Failed to update user: {Errors}", errors);
-                    return ServiceResult.Failure($"Failed to update user: {errors}");
+                    return ServiceResult.Failure(UserManagementErrors.UpdateFailed(errors));
                 }
 
                 var currentRoles = await _userManager.GetRolesAsync(user);
@@ -223,7 +221,8 @@ namespace budget_api.Services
                 {
                     await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 }
-                await _userManager.AddToRoleAsync(user, role.Name);
+
+                await _userManager.AddToRoleAsync(user, role.Name!);
 
                 await transaction.CommitAsync();
                 return ServiceResult.Success();
@@ -231,8 +230,8 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error updating roles for user {model.UserId}");
-                return ServiceResult.Failure("Error updating user roles");
+                _logger.LogError(ex, $"Error updating roles/user {model.UserId}");
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ObjectName, model.UserId));
             }
         }
 
@@ -257,7 +256,7 @@ namespace budget_api.Services
                      .FirstOrDefaultAsync();
 
                 if (userData == null)
-                    return ServiceResult<UserDto>.Failure($"User with ID {userId} not found");
+                    return ServiceResult<UserDto>.Failure(CommonErrors.NotFound(ObjectName, userId));
 
                 var userDto = new UserDto
                 {
@@ -272,8 +271,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting user with ID {userId}");
-                return ServiceResult<UserDto>.Failure("Error retrieving user details");
+                _logger.LogError(ex, $"GetUserById error {userId}");
+                return ServiceResult<UserDto>.Failure(CommonErrors.FetchFailed(ObjectName));
             }
         }
     }
