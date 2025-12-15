@@ -117,7 +117,7 @@ namespace budget_api.Services
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
             {
-                return ServiceResult<LoginResponse>.Failure("Invalid username or password");
+                return ServiceResult<LoginResponse>.Failure("Invalid email or password");
             }
 
             var token = await GenerateJwtTokenAsync(user);
