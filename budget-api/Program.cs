@@ -154,6 +154,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddHealthChecks();
@@ -172,11 +175,15 @@ app.UseForwardedHeaders(forwardedHeadersOptions);
 
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())       
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+//dla demonstracji odkomentować
+//app.UseSwagger();
+//app.UseSwaggerUI();
 
 app.UseCors();
 app.UseAuthentication();
