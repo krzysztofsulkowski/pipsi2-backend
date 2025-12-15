@@ -50,5 +50,40 @@ namespace budget_api.Services
                 _ => method.ToString()
             };
         }
+
+        public async Task<ServiceResult<List<FrequencyDto>>> GetAllFrequenciesAsync()
+        {
+            try
+            {
+                var frequencies = Enum.GetValues(typeof(Frequency))
+                    .Cast<Frequency>()
+                    .Select(f => new FrequencyDto
+                    {
+                        Value = f,
+                        Name = GetFrequencyName(f)
+                    })
+                    .OrderBy(f => f.Value)
+                    .ToList();
+
+                return ServiceResult<List<FrequencyDto>>.Success(frequencies);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Wystąpił błąd podczas pobierania częstotliwości.");
+                return ServiceResult<List<FrequencyDto>>.Failure(CommonErrors.FetchFailed("Frequencies"));
+            }
+        }
+
+        private static string GetFrequencyName(Frequency frequency)
+        {
+            return frequency switch
+            {
+                Frequency.Weekly => "Co tydzień",
+                Frequency.BiWeekly => "Co 2 tygodnie",
+                Frequency.Monthly => "Miesięcznie",
+                Frequency.Yearly => "Rocznie",
+                _ => frequency.ToString()
+            };
+        }
     }
 }

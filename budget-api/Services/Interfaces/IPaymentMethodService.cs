@@ -6,5 +6,6 @@ namespace budget_api.Services.Interfaces
     public interface IPaymentMethodService
     {
         Task<ServiceResult<List<PaymentMethodDto>>> GetAllPaymentMethodsAsync();
+        Task<ServiceResult<List<FrequencyDto>>> GetAllFrequenciesAsync();
     }
 }
