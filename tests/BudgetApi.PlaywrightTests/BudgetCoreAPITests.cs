@@ -11,12 +11,15 @@ POST / api / budget /{ budgetId}/ archive
 
 POST / api / budget /{ budgetId}/ unarchive
 */
+using DotNetEnv;
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using NUnit.Framework;
+
 
 namespace BudgetApi.PlaywrightTests;
 
@@ -29,6 +32,12 @@ public class BudgetCoreAPITests
     [OneTimeSetUp]
     public async Task Setup()
     {
+        var envPath = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "..", ".env"));
+        Console.WriteLine($"[Setup] Loading .env from: {envPath}");
+        Console.WriteLine($"[Setup] .env exists: {File.Exists(envPath)}");
+
+        Env.Load(envPath);
+
         _playwright = await Playwright.CreateAsync();
         _request = await _playwright.APIRequest.NewContextAsync(new()
         {
@@ -105,6 +114,64 @@ public class BudgetCoreAPITests
             $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
     }
 
+    // Test 4(BudgetCore): Get my budgets should return 200 when user is authenticated (login via /api/authentication/login using credentials from .env)
+    [Test, Order(4)]
+    public async Task Budget_MyBudgets_Should_Return_200_When_Authorized()
+    {
+        Console.WriteLine("[Test 4] Start: login and get my-budgets WITH authentication");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginPayload = new
+        {
+            email = email,
+            password = password
+        };
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = loginPayload }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 4] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var response = await authRequest.GetAsync("/api/budget/my-budgets");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 4] My-budgets HTTP Status: {status}");
+        Console.WriteLine($"[Test 4] My-budgets Body: {body}");
+
+        Assert.That(status == 200, $"Expected 200, got HTTP {status}\n{body}");
+    }
 
 
     [OneTimeTearDown]
