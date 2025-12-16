@@ -242,6 +242,115 @@ public class BudgetCoreAPITests
             $"Expected 200 when creating budget, got HTTP {status}\n{body}");
     }
 
+    // Test 6(BudgetCore): Get budget by id should return 200 when user is authenticated (owner)
+    [Test, Order(6)]
+    public async Task Budget_GetById_Should_Return_200_When_Authorized()
+    {
+        Console.WriteLine("[Test 6] Start: create budget, then get it by ID WITH authentication");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginPayload = new
+        {
+            email = email,
+            password = password
+        };
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = loginPayload }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 6] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 6] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createPayload = new
+        {
+            id = 0,
+            name = createdName
+        };
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = createPayload }
+        );
+
+        var createStatus = createResponse.Status;
+
+        Console.WriteLine($"[Test 6] Create budget HTTP Status: {createStatus}");
+
+        Assert.That(createStatus == 200,
+            $"Expected 200 when creating budget, got HTTP {createStatus}");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+
+        var listStatus = listResponse.Status;
+        var listBody = await listResponse.TextAsync();
+
+        Console.WriteLine($"[Test 6] My-budgets HTTP Status: {listStatus}");
+        Console.WriteLine($"[Test 6] My-budgets Body: {listBody}");
+
+        Assert.That(listStatus == 200,
+            $"Expected 200 from my-budgets, got HTTP {listStatus}\n{listBody}");
+
+        using var listJson = JsonDocument.Parse(listBody);
+
+        var budgets = listJson.RootElement.EnumerateArray();
+
+        int budgetId = -1;
+
+        foreach (var budget in budgets)
+        {
+            if (budget.GetProperty("name").GetString() == createdName)
+            {
+                budgetId = budget.GetProperty("id").GetInt32();
+                break;
+            }
+        }
+
+        Assert.That(budgetId > 0, $"Created budget '{createdName}' not found in my-budgets");
+
+        Console.WriteLine($"[Test 6] Found created budgetId: {budgetId}");
+
+        var response = await authRequest.GetAsync($"/api/budget/{budgetId}");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 6] Get budget by ID HTTP Status: {status}");
+        Console.WriteLine($"[Test 6] Get budget by ID Body: {body}");
+
+        Assert.That(status == 200,
+            $"Expected 200 when getting budget by ID, got HTTP {status}\n{body}");
+    }
 
 
     [OneTimeTearDown]
