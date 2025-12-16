@@ -68,6 +68,45 @@ public class BudgetCoreAPITests
             $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
     }
 
+    // Test 2(BudgetCore): Get my budgets should return 401/403 when user is not authenticated
+    [Test, Order(2)]
+    public async Task Budget_MyBudgets_Should_Return_401_Or_403_When_Unauthorized()
+    {
+        Console.WriteLine("[Test 2] Start: get my-budgets WITHOUT authentication");
+
+        var response = await _request.GetAsync("/api/budget/my-budgets");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 2] My-budgets HTTP Status: {status}");
+        Console.WriteLine($"[Test 2] My-budgets Body: {body}");
+
+        Assert.That(status == 401 || status == 403,
+            $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
+    }
+
+    // Test 3(BudgetCore): Get budget by id should return 401/403 when user is not authenticated
+    [Test, Order(3)]
+    public async Task Budget_GetById_Should_Return_401_Or_403_When_Unauthorized()
+    {
+        Console.WriteLine("[Test 3] Start: get budget by ID WITHOUT authentication");
+
+        var budgetId = 123123;
+        var response = await _request.GetAsync($"/api/budget/{budgetId}");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 3] Get budget by ID HTTP Status: {status}");
+        Console.WriteLine($"[Test 3] Get budget by ID Body: {body}");
+
+        Assert.That(status == 401 || status == 403,
+            $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
+    }
+
+
+
     [OneTimeTearDown]
     public async Task Teardown()
     {
