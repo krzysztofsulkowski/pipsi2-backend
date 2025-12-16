@@ -937,6 +937,24 @@ public class BudgetCoreAPITests
             $"Expected 400 or 409 on second archive (already archived), got HTTP {secondArchiveStatus}\n{secondArchiveBody}");
     }
 
+    // Test 12(BudgetCore): Archive budget should return 401/403 when user is not authenticated
+    [Test, Order(12)]
+    public async Task Budget_Archive_Should_Return_401_Or_403_When_Unauthorized()
+    {
+        Console.WriteLine("[Test 12] Start: try to archive budget WITHOUT authentication");
+
+        var budgetId = 1;
+        var response = await _request.PostAsync($"/api/budget/{budgetId}/archive");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 12] Archive budget HTTP Status: {status}");
+        Console.WriteLine($"[Test 12] Archive budget Body: {body}");
+
+        Assert.That(status == 401 || status == 403,
+            $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
+    }
 
 
     [OneTimeTearDown]
