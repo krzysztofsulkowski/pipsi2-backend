@@ -173,6 +173,76 @@ public class BudgetCoreAPITests
         Assert.That(status == 200, $"Expected 200, got HTTP {status}\n{body}");
     }
 
+    // Test 5(BudgetCore): Create budget should return 200 when user is authenticated
+    [Test, Order(5)]
+    public async Task Budget_Create_Should_Return_200_When_Authorized()
+    {
+        Console.WriteLine("[Test 5] Start: create budget WITH authentication");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginPayload = new
+        {
+            email = email,
+            password = password
+        };
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = loginPayload }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 5] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 5] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var createPayload = new
+        {
+            id = 0,
+            name = $"Test budget {Guid.NewGuid()}"
+        };
+
+        var response = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = createPayload }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 5] Create budget HTTP Status: {status}");
+        Console.WriteLine($"[Test 5] Create budget Body: {body}");
+
+        Assert.That(status == 200,
+            $"Expected 200 when creating budget, got HTTP {status}\n{body}");
+    }
+
+
 
     [OneTimeTearDown]
     public async Task Teardown()
