@@ -197,17 +197,16 @@ namespace budget_api.Services
                     .FirstOrDefaultAsync(ub => ub.BudgetId == budgetId && ub.UserId == userId);
 
                 if (userBudget == null)
-                    return ServiceResult.Failure("Użytkownik nie jest członkiem tego budżetu.");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 if (userBudget.Role != UserRoleInBudget.Owner)
-                    return ServiceResult.Failure("Tylko właściciel może archiwizować budżet.");
+                    return ServiceResult.Failure(BudgetErrors.OnlyOwnerCanArchive());
 
                 var budget = await _context.Budgets.FindAsync(budgetId);
-                if (budget == null)
-                    return ServiceResult.Failure("Nie znaleziono budżetu.");
+                if (budget == null) return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 if (budget.IsArchived)
-                    return ServiceResult.Failure("Budżet jest już zarchiwizowany.");
+                    return ServiceResult.Failure(BudgetErrors.AlreadyArchived());
 
                 budget.IsArchived = true;
                 await _context.SaveChangesAsync();
@@ -217,8 +216,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas archiwizacji budżetu {BudgetId} przez użytkownika {UserId}.", budgetId, userId);
-                return ServiceResult.Failure("Wystąpił błąd podczas archiwizacji budżetu.");
+                _logger.LogError(ex, "ArchiveBudgetAsync failed");
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ObjectName, budgetId));
             }
         }
 
@@ -231,17 +230,16 @@ namespace budget_api.Services
                     .FirstOrDefaultAsync(ub => ub.BudgetId == budgetId && ub.UserId == userId);
 
                 if (userBudget == null)
-                    return ServiceResult.Failure("Użytkownik nie jest członkiem tego budżetu.");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 if (userBudget.Role != UserRoleInBudget.Owner)
-                    return ServiceResult.Failure("Tylko właściciel może przywrócić budżet.");
+                    return ServiceResult.Failure(BudgetErrors.OnlyOwnerCanRestore());
 
                 var budget = await _context.Budgets.FindAsync(budgetId);
-                if (budget == null)
-                    return ServiceResult.Failure("Nie znaleziono budżetu.");
+                if (budget == null) return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 if (!budget.IsArchived)
-                    return ServiceResult.Failure("Budżet nie jest zarchiwizowany.");
+                    return ServiceResult.Failure(BudgetErrors.NotArchived());
 
                 budget.IsArchived = false;
                 await _context.SaveChangesAsync();
@@ -252,7 +250,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas przywracania budżetu {BudgetId} przez użytkownika {UserId}.", budgetId, userId);
-                return ServiceResult.Failure("Wystąpił błąd podczas przywracania budżetu.");
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ObjectName, budgetId));
             }
         }
 
@@ -279,7 +277,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas pobierania budżetów dla użytkownika {UserId}", userId);
-                return ServiceResult<List<BudgetSummaryViewModel>>.Failure("Wystąpił błąd podczas pobierania listy budżetów.");
+                return ServiceResult<List<BudgetSummaryViewModel>>.Failure(CommonErrors.FetchFailed(ObjectName));
             }
         }
 
@@ -291,14 +289,13 @@ namespace budget_api.Services
                     .FirstOrDefaultAsync(ub => ub.BudgetId == budgetId && ub.UserId == userId);
 
                 if (userBudget == null)
-                    return ServiceResult.Failure("Nie znaleziono budżetu lub brak uprawnień.");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 if (userBudget.Role != UserRoleInBudget.Owner)
-                    return ServiceResult.Failure("Tylko właściciel budżetu może go edytować.");
+                    return ServiceResult.Failure(BudgetErrors.OnlyOwnerCanEdit());
 
                 var budget = await _context.Budgets.FindAsync(budgetId);
-                if (budget == null)
-                    return ServiceResult.Failure("Nie znaleziono budżetu.");
+                if (budget == null) return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 if (!string.IsNullOrWhiteSpace(model.Name))
                     budget.Name = model.Name.Trim();
@@ -310,7 +307,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas edycji budżetu {BudgetId} przez użytkownika {UserId}.", budgetId, userId);
-                return ServiceResult.Failure("Wystąpił błąd podczas edycji budżetu.");
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ObjectName, budgetId));
             }
         }
 
@@ -319,25 +316,25 @@ namespace budget_api.Services
             try
             {
                 if (string.IsNullOrWhiteSpace(currentUserId) || string.IsNullOrWhiteSpace(targetUserId))
-                    return ServiceResult.Failure("Nieprawidłowe parametry.");
+                    return ServiceResult.Failure(CommonErrors.BadRequest("ID użytkownika jest wymagane."));
 
                 var currentUserBudget = await _context.UserBudgets
                     .FirstOrDefaultAsync(ub => ub.BudgetId == budgetId && ub.UserId == currentUserId);
                 if (currentUserBudget == null)
-                    return ServiceResult.Failure("Użytkownik nie jest członkiem tego budżetu.");
+                    return ServiceResult.Failure(CommonErrors.NotFound(ObjectName, budgetId));
 
                 var targetUserBudget = await _context.UserBudgets
                     .FirstOrDefaultAsync(ub => ub.BudgetId == budgetId && ub.UserId == targetUserId);
                 if (targetUserBudget == null)
-                    return ServiceResult.Failure("Użytkownik do usunięcia nie jest członkiem tego budżetu.");
+                    return ServiceResult.Failure(BudgetErrors.MemberNotFound());
 
                 if (currentUserBudget.Role == UserRoleInBudget.Owner)
                 {
                     if (currentUserId == targetUserId)
-                        return ServiceResult.Failure("Właściciel nie może opuścić budżetu.");
+                        return ServiceResult.Failure(BudgetErrors.OwnerCannotLeave());
 
                     if (targetUserBudget.Role == UserRoleInBudget.Owner)
-                        return ServiceResult.Failure("Nie można usunąć innego właściciela.");
+                        return ServiceResult.Failure(BudgetErrors.CannotRemoveOwner());
 
                     _context.UserBudgets.Remove(targetUserBudget);
                     await _context.SaveChangesAsync();
@@ -347,7 +344,7 @@ namespace budget_api.Services
                 else
                 {
                     if (currentUserId != targetUserId)
-                        return ServiceResult.Failure("Nie masz uprawnień do usunięcia innego członka.");
+                        return ServiceResult.Failure(CommonErrors.Forbidden("Możesz usunąć tylko samego siebie."));
 
                     _context.UserBudgets.Remove(currentUserBudget);
                     await _context.SaveChangesAsync();
@@ -358,7 +355,7 @@ namespace budget_api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas usuwania członka {TargetUserId} z budżetu {BudgetId} przez {CurrentUserId}.", targetUserId, budgetId, currentUserId);
-                return ServiceResult.Failure("Wystąpił błąd podczas usuwania członka lub opuszczania budżetu.");
+                return ServiceResult.Failure(CommonErrors.DeleteFailed("UserBudget"));
             }
         }
     }

@@ -3,8 +3,8 @@ using budget_api.Models.DatabaseModels;
 using budget_api.Models.Dto;
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
+using budget_api.Services.Errors; 
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 using System.Linq.Dynamic.Core;
 
 namespace budget_api.Services
@@ -14,6 +14,9 @@ namespace budget_api.Services
         private readonly BudgetApiDbContext _context;
         private readonly ILogger<TransactionService> _logger;
         private readonly IEmailService _emailService;
+        private const string IncomeObj = "Income";
+        private const string ExpenseObj = "Expense";
+        private const string TransactionObj = "Transaction";
 
         public TransactionService(BudgetApiDbContext context, ILogger<TransactionService> logger, IEmailService emailService)
         {
@@ -46,7 +49,7 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure("Brak uprawnień do tego budżetu.");
+                    return ServiceResult.Failure(TransactionErrors.NoAccess());
 
                 var tx = new BudgetTransaction
                 {
@@ -65,8 +68,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas dodawania przychodu do budżetu {BudgetId}", budgetId);
-                return ServiceResult.Failure("Błąd podczas dodawania przychodu.");
+                _logger.LogError(ex, "Błąd dodawania przychodu: Budżet {BudgetId}", budgetId);
+                return ServiceResult.Failure(CommonErrors.CreateFailed(IncomeObj));
             }
         }
 
@@ -75,13 +78,14 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult<TransactionDetailsDto>.Failure("Brak uprawnień.");
+                    return ServiceResult<TransactionDetailsDto>.Failure(TransactionErrors.NoAccess());
 
                 var tx = await _context.BudgetTransactions
                     .Include(t => t.Category)
                     .FirstOrDefaultAsync(t => t.Id == incomeId && t.BudgetId == budgetId && t.Type == TransactionType.Income);
 
-                if (tx == null) return ServiceResult<TransactionDetailsDto>.Failure("Nie znaleziono przychodu.");
+                if (tx == null)
+                    return ServiceResult<TransactionDetailsDto>.Failure(TransactionErrors.IncomeNotFound(incomeId));
 
                 return ServiceResult<TransactionDetailsDto>.Success(new TransactionDetailsDto
                 {
@@ -103,8 +107,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas pobierania szczegółów przychodu {IncomeId} dla budżetu {BudgetId}", incomeId, budgetId);
-                return ServiceResult<TransactionDetailsDto>.Failure("Błąd podczas pobierania szczegółów przychodu.");
+                _logger.LogError(ex, "Błąd pobierania przychodu {IncomeId}", incomeId);
+                return ServiceResult<TransactionDetailsDto>.Failure(CommonErrors.FetchFailed(IncomeObj));
             }
         }
 
@@ -113,10 +117,10 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure("Brak uprawnień.");
+                    return ServiceResult.Failure(TransactionErrors.NoAccess());
 
                 var tx = await _context.BudgetTransactions.FirstOrDefaultAsync(t => t.Id == incomeId && t.BudgetId == budgetId && t.Type == TransactionType.Income);
-                if (tx == null) return ServiceResult.Failure("Nie znaleziono przychodu.");
+                if (tx == null) return ServiceResult.Failure(TransactionErrors.IncomeNotFound(incomeId));
 
                 tx.Title = model.Description;
                 tx.Amount = model.Amount;
@@ -127,8 +131,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas edycji przychodu {IncomeId}", incomeId);
-                return ServiceResult.Failure("Błąd podczas edycji przychodu.");
+                _logger.LogError(ex, "Błąd edycji przychodu {IncomeId}", incomeId);
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(IncomeObj, incomeId));
             }
         }
 
@@ -137,10 +141,10 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure("Brak uprawnień.");
+                    return ServiceResult.Failure(TransactionErrors.NoAccess());
 
                 var tx = await _context.BudgetTransactions.FirstOrDefaultAsync(t => t.Id == incomeId && t.BudgetId == budgetId && t.Type == TransactionType.Income);
-                if (tx == null) return ServiceResult.Failure("Nie znaleziono przychodu.");
+                if (tx == null) return ServiceResult.Failure(TransactionErrors.IncomeNotFound(incomeId));
 
                 _context.BudgetTransactions.Remove(tx);
                 await _context.SaveChangesAsync();
@@ -148,8 +152,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas usuwania przychodu {IncomeId}", incomeId);
-                return ServiceResult.Failure("Błąd podczas usuwania przychodu.");
+                _logger.LogError(ex, "Błąd usuwania przychodu {IncomeId}", incomeId);
+                return ServiceResult.Failure(CommonErrors.DeleteFailed(IncomeObj, incomeId));
             }
         }
 
@@ -158,11 +162,11 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure("Brak uprawnień do tego budżetu.");
+                    return ServiceResult.Failure(TransactionErrors.NoAccess());
 
                 var balance = await ComputeBalanceAsync(budgetId);
                 if (model.Amount > balance)
-                    return ServiceResult.Failure("Brak wystarczających środków w budżecie. Operacja odrzucona.");
+                    return ServiceResult.Failure(TransactionErrors.InsufficientFunds());
 
                 if (model.ExpenseType == ExpenseStatus.Instant)
                 {
@@ -193,8 +197,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas dodawania wydatku do budżetu {BudgetId}", budgetId);
-                return ServiceResult.Failure("Błąd podczas dodawania wydatku.");
+                _logger.LogError(ex, "Błąd dodawania wydatku: Budżet {BudgetId}", budgetId);
+                return ServiceResult.Failure(CommonErrors.CreateFailed(ExpenseObj));
             }
         }
 
@@ -203,13 +207,13 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult<TransactionDetailsDto>.Failure("Brak uprawnień.");
+                    return ServiceResult<TransactionDetailsDto>.Failure(TransactionErrors.NoAccess());
 
                 var tx = await _context.BudgetTransactions
                     .Include(t => t.Category)
                     .FirstOrDefaultAsync(t => t.Id == expenseId && t.BudgetId == budgetId && t.Type == TransactionType.Expense);
 
-                if (tx == null) return ServiceResult<TransactionDetailsDto>.Failure("Nie znaleziono wydatku.");
+                if (tx == null) return ServiceResult<TransactionDetailsDto>.Failure(TransactionErrors.ExpenseNotFound(expenseId));
 
                 return ServiceResult<TransactionDetailsDto>.Success(new TransactionDetailsDto
                 {
@@ -231,8 +235,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas pobierania szczegółów wydatku {ExpenseId}", expenseId);
-                return ServiceResult<TransactionDetailsDto>.Failure("Błąd podczas pobierania szczegółów wydatku.");
+                _logger.LogError(ex, "Błąd pobierania wydatku {ExpenseId}", expenseId);
+                return ServiceResult<TransactionDetailsDto>.Failure(CommonErrors.FetchFailed(ExpenseObj));
             }
         }
 
@@ -241,18 +245,17 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure("Brak uprawnień.");
+                    return ServiceResult.Failure(TransactionErrors.NoAccess());
 
                 var tx = await _context.BudgetTransactions.FirstOrDefaultAsync(t => t.Id == expenseId && t.BudgetId == budgetId && t.Type == TransactionType.Expense);
-                if (tx == null) return ServiceResult.Failure("Nie znaleziono wydatku.");
+                if (tx == null) return ServiceResult.Failure(TransactionErrors.ExpenseNotFound(expenseId));
 
-                // compute available = incomes - other expenses (excluding this)
                 var incomes = await _context.BudgetTransactions.Where(t => t.BudgetId == budgetId && t.Type == TransactionType.Income).SumAsync(t => (decimal?)t.Amount) ?? 0m;
                 var otherExpenses = await _context.BudgetTransactions.Where(t => t.BudgetId == budgetId && t.Type == TransactionType.Expense && t.Id != expenseId).SumAsync(t => (decimal?)t.Amount) ?? 0m;
                 var available = incomes - otherExpenses;
 
                 if (model.Amount > available)
-                    return ServiceResult.Failure("Zmiana wartości wydatku spowoduje ujemne saldo budżetu. Operacja odrzucona.");
+                    return ServiceResult.Failure(TransactionErrors.BalanceChangeDenied());
 
                 if (model.ExpenseType == ExpenseStatus.Instant)
                 {
@@ -275,8 +278,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas edycji wydatku {ExpenseId}", expenseId);
-                return ServiceResult.Failure("Błąd podczas edycji wydatku.");
+                _logger.LogError(ex, "Błąd edycji wydatku {ExpenseId}", expenseId);
+                return ServiceResult.Failure(CommonErrors.UpdateFailed(ExpenseObj, expenseId));
             }
         }
 
@@ -285,10 +288,10 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure("Brak uprawnień.");
+                    return ServiceResult.Failure(TransactionErrors.NoAccess());
 
                 var tx = await _context.BudgetTransactions.FirstOrDefaultAsync(t => t.Id == expenseId && t.BudgetId == budgetId && t.Type == TransactionType.Expense);
-                if (tx == null) return ServiceResult.Failure("Nie znaleziono wydatku.");
+                if (tx == null) return ServiceResult.Failure(TransactionErrors.ExpenseNotFound(expenseId));
 
                 _context.BudgetTransactions.Remove(tx);
                 await _context.SaveChangesAsync();
@@ -296,8 +299,8 @@ namespace budget_api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas usuwania wydatku {ExpenseId}", expenseId);
-                return ServiceResult.Failure("Błąd podczas usuwania wydatku.");
+                _logger.LogError(ex, "Błąd usuwania wydatku {ExpenseId}", expenseId);
+                return ServiceResult.Failure(CommonErrors.DeleteFailed(ExpenseObj, expenseId));
             }
         }
 
@@ -306,9 +309,8 @@ namespace budget_api.Services
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult<DataTableResponse<TransactionListItemDto>>.Failure("Brak uprawnień.");
+                    return ServiceResult<DataTableResponse<TransactionListItemDto>>.Failure(TransactionErrors.NoAccess());
 
-                // columns for ordering - must match front-end DataTable column order
                 string[] columnNames = { "Date", "Title", "Amount", "Type", "Category", "Status", "PaymentMethod", "UserName" };
                 string sortColumn = (request.OrderColumn >= 0 && request.OrderColumn < columnNames.Length) ? columnNames[request.OrderColumn] : "Date";
 
@@ -333,7 +335,6 @@ namespace budget_api.Services
 
                 if (!string.IsNullOrEmpty(sortColumn))
                 {
-                    // map column names to actual properties for dynamic order
                     string orderExpr = sortColumn switch
                     {
                         "Date" => "Date",
@@ -346,10 +347,7 @@ namespace budget_api.Services
                         "UserName" => "CreatedByUserId",
                         _ => "Date"
                     };
-                    var dir = string.Equals(request.OrderDir, "desc", StringComparison.OrdinalIgnoreCase)
-                        ? "desc"
-                        : "asc";
-
+                    var dir = string.Equals(request.OrderDir, "desc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
                     baseQuery = baseQuery.OrderBy(orderExpr + " " + dir);
                 }
 
@@ -373,20 +371,18 @@ namespace budget_api.Services
                     })
                     .ToListAsync();
 
-                var response = new DataTableResponse<TransactionListItemDto>
+                return ServiceResult<DataTableResponse<TransactionListItemDto>>.Success(new DataTableResponse<TransactionListItemDto>
                 {
                     Draw = request.Draw,
                     RecordsTotal = totalRecords,
                     RecordsFiltered = recordsFiltered,
                     Data = data
-                };
-
-                return ServiceResult<DataTableResponse<TransactionListItemDto>>.Success(response);
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas wyszukiwania transakcji dla budżetu {BudgetId}", budgetId);
-                return ServiceResult<DataTableResponse<TransactionListItemDto>>.Failure("Błąd podczas wyszukiwania transakcji.");
+                _logger.LogError(ex, "Błąd SearchTransactions dla budżetu {BudgetId}", budgetId);
+                return ServiceResult<DataTableResponse<TransactionListItemDto>>.Failure(CommonErrors.FetchFailed(TransactionObj));
             }
         }
 
@@ -412,24 +408,21 @@ namespace budget_api.Services
                 {
                     Id = t.Id,
                     Date = t.Date,
-                    Title = (t.Title == null || t.Title == string.Empty)
-                             ? (t.Type == TransactionType.Income ? "Przychód" : "Wydatek")
-                             : t.Title,
+                    Title = (string.IsNullOrEmpty(t.Title)) ? (t.Type == TransactionType.Income ? "Przychód" : "Wydatek") : t.Title,
                     Amount = t.Amount,
                     Type = t.Type,
                     CategoryName = t.Category != null ? t.Category.Name : "Inne",
                     Status = t.Status,
                     PaymentMethod = t.PaymentMethod,
                     UserName = t.User != null ? t.User.UserName : "Nieznany"
-
                 }).ToListAsync();
 
                 return ServiceResult<List<TransactionListItemDto>>.Success(list);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd podczas pobierania statystyk dla budżetu {BudgetId}", budgetId);
-                return ServiceResult<List<TransactionListItemDto>>.Failure("Nie udało się pobrać danych do statystyk.");
+                _logger.LogError(ex, "Błąd pobierania statystyk dla budżetu {BudgetId}", budgetId);
+                return ServiceResult<List<TransactionListItemDto>>.Failure(CommonErrors.FetchFailed("Statystyki"));
             }
         }
 
@@ -450,10 +443,8 @@ namespace budget_api.Services
                     .ToListAsync();
 
                 var distinctBudgetIds = potentialExpenses.Select(e => e.BudgetId).Distinct().ToList();
-
                 var budgetNamesMap = await _context.Budgets
                     .Where(b => distinctBudgetIds.Contains(b.Id))
-                    .Select(b => new { b.Id, b.Name })
                     .ToDictionaryAsync(k => k.Id, v => v.Name);
 
                 var balanceCache = new Dictionary<int, decimal>();
@@ -463,56 +454,39 @@ namespace budget_api.Services
                     try
                     {
                         if (!balanceCache.ContainsKey(expense.BudgetId))
-                        {
                             balanceCache[expense.BudgetId] = await ComputeBalanceAsync(expense.BudgetId);
-                        }
 
                         var currentBalance = balanceCache[expense.BudgetId];
-
-                        var budgetName = budgetNamesMap.ContainsKey(expense.BudgetId)
-                           ? budgetNamesMap[expense.BudgetId]
-                           : "Budżet";
-
+                        var budgetName = budgetNamesMap.GetValueOrDefault(expense.BudgetId, "Budżet");
                         var requiredAmount = expense.Amount;
                         var expenseCreatorEmail = expense.User?.Email;
 
-                        if (string.IsNullOrEmpty(expenseCreatorEmail))
-                        {
-                            _logger.LogError("Użytkownik {UserId} dla wydatku {ExpenseId} nie ma adresu e-mail.", expense.CreatedByUserId, expense.Id);
-                            continue; 
-                        }
+                        if (string.IsNullOrEmpty(expenseCreatorEmail)) continue;
 
                         if (requiredAmount > currentBalance)
                         {
                             await _emailService.SendRecurrentExpenseFailedNotificationAsync(
-                                expenseCreatorEmail,
-                                budgetName,
-                                expense.Title,
-                                expense.Amount,
-                                "Brak wystarczających środków na koncie w budżecie.");
+                                expenseCreatorEmail, budgetName, expense.Title, expense.Amount, "Brak wystarczających środków na koncie w budżecie.");
 
                             if (expense.Status == ExpenseStatus.Planned)
                             {
                                 expense.Date = today.AddDays(1);
                                 _context.BudgetTransactions.Update(expense);
                             }
-
                             await _context.SaveChangesAsync();
-
-                            _logger.LogWarning("Job: Nie wykonano wydatku '{Title}' ({Amount}) dla budżetu {BudgetId} - niewystarczające środki. Bilans: {Balance}", expense.Title, expense.Amount, expense.BudgetId, currentBalance);
                             continue;
                         }
 
-                        BudgetTransaction transactionToProcess = expense;
+                        BudgetTransaction processedTx = expense;
 
                         if (expense.Status == ExpenseStatus.Recurring)
                         {
-                            transactionToProcess = new BudgetTransaction
+                            processedTx = new BudgetTransaction
                             {
                                 BudgetId = expense.BudgetId,
                                 Title = expense.Title,
                                 Amount = expense.Amount,
-                                Date = today.AddHours(DateTime.UtcNow.Hour).AddMinutes(DateTime.UtcNow.Minute),
+                                Date = DateTime.UtcNow,
                                 Type = TransactionType.Expense,
                                 CategoryId = expense.CategoryId,
                                 PaymentMethod = expense.PaymentMethod,
@@ -520,15 +494,14 @@ namespace budget_api.Services
                                 CreatedAt = DateTime.UtcNow,
                                 CreatedByUserId = expense.CreatedByUserId
                             };
-                            await _context.BudgetTransactions.AddAsync(transactionToProcess);
-
+                            await _context.BudgetTransactions.AddAsync(processedTx);
                             expense.Date = GetNextDate(expense);
                             _context.BudgetTransactions.Update(expense);
                         }
                         else if (expense.Status == ExpenseStatus.Planned)
                         {
                             expense.Status = ExpenseStatus.Instant;
-                            expense.Date = today.AddHours(DateTime.UtcNow.Hour).AddMinutes(DateTime.UtcNow.Minute);
+                            expense.Date = DateTime.UtcNow;
                             expense.Frequency = null;
                             expense.EndDate = null;
                             _context.BudgetTransactions.Update(expense);
@@ -538,27 +511,24 @@ namespace budget_api.Services
                         balanceCache[expense.BudgetId] -= requiredAmount;
 
                         await _emailService.SendRecurrentExpenseSuccessNotificationAsync(
-                            expenseCreatorEmail,
-                            budgetName,
-                            transactionToProcess.Title,
-                            transactionToProcess.Amount);
+                            expenseCreatorEmail, budgetName, processedTx.Title, processedTx.Amount);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Błąd podczas przetwarzania transakcji joba {ExpenseId} dla budżetu {BudgetId}", expense.Id, expense.BudgetId);
+                        _logger.LogError(ex, "Błąd Joba: Transakcja {ExpenseId}", expense.Id);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Krytyczny błąd Joba przetwarzającego wydatki cykliczne/planowane.");
-                return ServiceResult.Failure("Krytyczny błąd podczas pracy joba: " + ex.Message);
+                _logger.LogError(ex, "Błąd krytyczny Joba.");
+                return ServiceResult.Failure(CommonErrors.InternalServerError("Błąd krytyczny zadania harmonogramu."));
             }
 
             return ServiceResult.Success();
         }
 
-        DateTime GetNextDate(BudgetTransaction transaction)
+        private DateTime GetNextDate(BudgetTransaction transaction)
         {
             DateTime lastDate = transaction.Date;
             return transaction.Frequency switch
@@ -572,4 +542,3 @@ namespace budget_api.Services
         }
     }
 }
-
