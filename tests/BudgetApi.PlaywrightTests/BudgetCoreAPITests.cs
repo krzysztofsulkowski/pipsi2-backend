@@ -835,6 +835,108 @@ public class BudgetCoreAPITests
             $"Expected budget status to indicate archived, got '{statusText}'");
     }
 
+    // Test 11(BudgetCore): Archiving the same budget twice should return 400/409 (authenticated user)
+    [Test, Order(11)]
+    public async Task Budget_Archive_Should_Return_400_Or_409_When_Already_Archived()
+    {
+        Console.WriteLine("[Test 11] Start: create budget, archive it twice, expect error on second archive");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = email, password = password } }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 11] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 11] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = createdName } }
+        );
+
+        var createStatus = createResponse.Status;
+
+        Console.WriteLine($"[Test 11] Create budget HTTP Status: {createStatus}");
+
+        Assert.That(createStatus == 200, $"Expected 200 when creating budget, got HTTP {createStatus}");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listStatus = listResponse.Status;
+        var listBody = await listResponse.TextAsync();
+
+        Console.WriteLine($"[Test 11] My-budgets HTTP Status: {listStatus}");
+        Console.WriteLine($"[Test 11] My-budgets Body: {listBody}");
+
+        Assert.That(listStatus == 200, $"Expected 200 from my-budgets, got HTTP {listStatus}\n{listBody}");
+
+        using var listJson = JsonDocument.Parse(listBody);
+
+        int budgetId = -1;
+
+        foreach (var budget in listJson.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("name").GetString() == createdName)
+            {
+                budgetId = budget.GetProperty("id").GetInt32();
+                break;
+            }
+        }
+
+        Assert.That(budgetId > 0, $"Created budget '{createdName}' not found in my-budgets");
+
+        Console.WriteLine($"[Test 11] Created budgetId: {budgetId}");
+
+        var firstArchiveResponse = await authRequest.PostAsync($"/api/budget/{budgetId}/archive");
+        var firstArchiveStatus = firstArchiveResponse.Status;
+        var firstArchiveBody = await firstArchiveResponse.TextAsync();
+
+        Console.WriteLine($"[Test 11] First archive HTTP Status: {firstArchiveStatus}");
+        Console.WriteLine($"[Test 11] First archive Body: {firstArchiveBody}");
+
+        Assert.That(firstArchiveStatus == 200,
+            $"Expected 200 on first archive, got HTTP {firstArchiveStatus}\n{firstArchiveBody}");
+
+        var secondArchiveResponse = await authRequest.PostAsync($"/api/budget/{budgetId}/archive");
+        var secondArchiveStatus = secondArchiveResponse.Status;
+        var secondArchiveBody = await secondArchiveResponse.TextAsync();
+
+        Console.WriteLine($"[Test 11] Second archive HTTP Status: {secondArchiveStatus}");
+        Console.WriteLine($"[Test 11] Second archive Body: {secondArchiveBody}");
+
+        Assert.That(secondArchiveStatus == 400 || secondArchiveStatus == 409,
+            $"Expected 400 or 409 on second archive (already archived), got HTTP {secondArchiveStatus}\n{secondArchiveBody}");
+    }
+
 
 
     [OneTimeTearDown]
