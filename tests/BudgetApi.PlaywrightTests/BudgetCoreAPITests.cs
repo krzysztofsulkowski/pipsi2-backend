@@ -1158,6 +1158,272 @@ public class BudgetCoreAPITests
         }
     }
 
+    // Test 16(BudgetCore): Edit budget should return 200 and update name when user is authenticated (owner)
+    [Test, Order(16)]
+    public async Task Budget_Edit_Should_Return_200_And_Update_Name_When_Authorized()
+    {
+        Console.WriteLine("[Test 16] Start: create budget, edit it, then verify updated name in my-budgets");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = email, password = password } }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 16] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 16] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = createdName } }
+        );
+
+        var createStatus = createResponse.Status;
+
+        Console.WriteLine($"[Test 16] Create budget HTTP Status: {createStatus}");
+
+        Assert.That(createStatus == 200, $"Expected 200 when creating budget, got HTTP {createStatus}");
+
+        var listAfterCreateResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listAfterCreateStatus = listAfterCreateResponse.Status;
+        var listAfterCreateBody = await listAfterCreateResponse.TextAsync();
+
+        Console.WriteLine($"[Test 16] My-budgets (after create) HTTP Status: {listAfterCreateStatus}");
+        Console.WriteLine($"[Test 16] My-budgets (after create) Body: {listAfterCreateBody}");
+
+        Assert.That(listAfterCreateStatus == 200,
+            $"Expected 200 from my-budgets, got HTTP {listAfterCreateStatus}\n{listAfterCreateBody}");
+
+        using var listAfterCreateJson = JsonDocument.Parse(listAfterCreateBody);
+
+        int budgetId = -1;
+
+        foreach (var budget in listAfterCreateJson.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("name").GetString() == createdName)
+            {
+                budgetId = budget.GetProperty("id").GetInt32();
+                break;
+            }
+        }
+
+        Assert.That(budgetId > 0, $"Created budget '{createdName}' not found in my-budgets");
+
+        Console.WriteLine($"[Test 16] Created budgetId: {budgetId}");
+
+        var updatedName = $"Updated budget {Guid.NewGuid()}";
+
+        var editResponse = await authRequest.PostAsync(
+            $"/api/budget/{budgetId}/edit",
+            new() { DataObject = new { id = budgetId, name = updatedName } }
+        );
+
+        var editStatus = editResponse.Status;
+        var editBody = await editResponse.TextAsync();
+
+        Console.WriteLine($"[Test 16] Edit budget HTTP Status: {editStatus}");
+        Console.WriteLine($"[Test 16] Edit budget Body: {editBody}");
+
+        Assert.That(editStatus == 200,
+            $"Expected 200 when editing budget, got HTTP {editStatus}\n{editBody}");
+
+        var listAfterEditResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listAfterEditStatus = listAfterEditResponse.Status;
+        var listAfterEditBody = await listAfterEditResponse.TextAsync();
+
+        Console.WriteLine($"[Test 16] My-budgets (after edit) HTTP Status: {listAfterEditStatus}");
+        Console.WriteLine($"[Test 16] My-budgets (after edit) Body: {listAfterEditBody}");
+
+        Assert.That(listAfterEditStatus == 200,
+            $"Expected 200 from my-budgets after edit, got HTTP {listAfterEditStatus}\n{listAfterEditBody}");
+
+        using var listAfterEditJson = JsonDocument.Parse(listAfterEditBody);
+
+        string? nameAfterEdit = null;
+
+        foreach (var budget in listAfterEditJson.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("id").GetInt32() == budgetId)
+            {
+                nameAfterEdit = budget.GetProperty("name").GetString();
+                break;
+            }
+        }
+
+        Assert.That(string.IsNullOrWhiteSpace(nameAfterEdit) == false,
+            $"Budget id {budgetId} not found in my-budgets after edit");
+
+        Console.WriteLine($"[Test 16] Name after edit: {nameAfterEdit}");
+
+        Assert.That(nameAfterEdit == updatedName,
+            $"Expected updated name '{updatedName}', got '{nameAfterEdit}'");
+    }
+
+    // Test 17(BudgetCore): Edit budget should return 403 or masked not-found when user has no access
+    [Test, Order(17)]
+    public async Task Budget_Edit_Should_Return_403_Or_Masked_NotFound_When_User_Has_No_Access()
+    {
+        Console.WriteLine("[Test 17] Start: create budget as User A, then try to edit it as User B");
+
+        var emailA = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var passwordA = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        var emailB = Environment.GetEnvironmentVariable("TEST_USER2_EMAIL");
+        var passwordB = Environment.GetEnvironmentVariable("TEST_USER2_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(emailA) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(passwordA) == false, "TEST_USER_PASSWORD is missing");
+        Assert.That(string.IsNullOrWhiteSpace(emailB) == false, "TEST_USER2_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(passwordB) == false, "TEST_USER2_PASSWORD is missing");
+
+        var loginResponseA = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = emailA, password = passwordA } }
+        );
+
+        var loginStatusA = loginResponseA.Status;
+        var loginBodyA = await loginResponseA.TextAsync();
+
+        Console.WriteLine($"[Test 17] Login A HTTP Status: {loginStatusA}");
+        Console.WriteLine($"[Test 17] Login A Body: {loginBodyA}");
+
+        Assert.That(loginStatusA == 200, $"Login A failed\n{loginBodyA}");
+
+        using var loginJsonA = JsonDocument.Parse(loginBodyA);
+        var tokenA = loginJsonA.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(tokenA) == false, "JWT token for User A is missing");
+
+        var authRequestA = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {tokenA}" }
+        }
+        });
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequestA.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = createdName } }
+        );
+
+        var createStatus = createResponse.Status;
+
+        Console.WriteLine($"[Test 17] Create budget (A) HTTP Status: {createStatus}");
+
+        Assert.That(createStatus == 200, $"Expected 200 when creating budget as A, got HTTP {createStatus}");
+
+        var listResponseA = await authRequestA.GetAsync("/api/budget/my-budgets");
+        var listStatusA = listResponseA.Status;
+        var listBodyA = await listResponseA.TextAsync();
+
+        Console.WriteLine($"[Test 17] My-budgets (A) HTTP Status: {listStatusA}");
+        Console.WriteLine($"[Test 17] My-budgets (A) Body: {listBodyA}");
+
+        Assert.That(listStatusA == 200, $"Expected 200 from my-budgets as A, got HTTP {listStatusA}\n{listBodyA}");
+
+        using var listJsonA = JsonDocument.Parse(listBodyA);
+
+        int budgetId = -1;
+
+        foreach (var budget in listJsonA.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("name").GetString() == createdName)
+            {
+                budgetId = budget.GetProperty("id").GetInt32();
+                break;
+            }
+        }
+
+        Assert.That(budgetId > 0, $"Created budget '{createdName}' not found in my-budgets for A");
+
+        Console.WriteLine($"[Test 17] Created budgetId (A): {budgetId}");
+
+        var loginResponseB = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = emailB, password = passwordB } }
+        );
+
+        var loginStatusB = loginResponseB.Status;
+        var loginBodyB = await loginResponseB.TextAsync();
+
+        Console.WriteLine($"[Test 17] Login B HTTP Status: {loginStatusB}");
+        Console.WriteLine($"[Test 17] Login B Body: {loginBodyB}");
+
+        Assert.That(loginStatusB == 200, $"Login B failed\n{loginBodyB}");
+
+        using var loginJsonB = JsonDocument.Parse(loginBodyB);
+        var tokenB = loginJsonB.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(tokenB) == false, "JWT token for User B is missing");
+
+        var authRequestB = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {tokenB}" }
+        }
+        });
+
+        var updatedName = $"Updated budget {Guid.NewGuid()}";
+
+        var editResponse = await authRequestB.PostAsync(
+            $"/api/budget/{budgetId}/edit",
+            new() { DataObject = new { id = budgetId, name = updatedName } }
+        );
+
+        var status = editResponse.Status;
+        var body = await editResponse.TextAsync();
+
+        Console.WriteLine($"[Test 17] Edit budget as B HTTP Status: {status}");
+        Console.WriteLine($"[Test 17] Edit budget as B Body: {body}");
+
+        var isForbidden = status == 403;
+        var isMaskedNotFound = status == 400 && body.Contains("Error Budget.NotFound");
+
+        Assert.That(isForbidden || isMaskedNotFound,
+            $"Expected 403 or masked not-found (400 Error Budget.NotFound) when editing budget without permission, got HTTP {status}\n{body}");
+    }
+
 
     [OneTimeTearDown]
     public async Task Teardown()
