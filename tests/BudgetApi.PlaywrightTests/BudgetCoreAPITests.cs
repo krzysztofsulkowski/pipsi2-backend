@@ -710,6 +710,132 @@ public class BudgetCoreAPITests
             $"Expected 403 or masked not-found (400 Error Budget.NotFound) when archiving budget without permission, got HTTP {status}\n{body}");
     }
 
+    // Test 10(BudgetCore): My-budgets should show budget as archived after archiving it (authenticated user)
+    [Test, Order(10)]
+    public async Task Budget_MyBudgets_Should_Show_Archived_Status_After_Archive()
+    {
+        Console.WriteLine("[Test 10] Start: create budget, archive it, then verify status in my-budgets");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = email, password = password } }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 10] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 10] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = createdName } }
+        );
+
+        var createStatus = createResponse.Status;
+
+        Console.WriteLine($"[Test 10] Create budget HTTP Status: {createStatus}");
+
+        Assert.That(createStatus == 200, $"Expected 200 when creating budget, got HTTP {createStatus}");
+
+        var listAfterCreateResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listAfterCreateStatus = listAfterCreateResponse.Status;
+        var listAfterCreateBody = await listAfterCreateResponse.TextAsync();
+
+        Console.WriteLine($"[Test 10] My-budgets (after create) HTTP Status: {listAfterCreateStatus}");
+        Console.WriteLine($"[Test 10] My-budgets (after create) Body: {listAfterCreateBody}");
+
+        Assert.That(listAfterCreateStatus == 200,
+            $"Expected 200 from my-budgets, got HTTP {listAfterCreateStatus}\n{listAfterCreateBody}");
+
+        using var listAfterCreateJson = JsonDocument.Parse(listAfterCreateBody);
+
+        int budgetId = -1;
+
+        foreach (var budget in listAfterCreateJson.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("name").GetString() == createdName)
+            {
+                budgetId = budget.GetProperty("id").GetInt32();
+                break;
+            }
+        }
+
+        Assert.That(budgetId > 0, $"Created budget '{createdName}' not found in my-budgets");
+
+        Console.WriteLine($"[Test 10] Created budgetId: {budgetId}");
+
+        var archiveResponse = await authRequest.PostAsync($"/api/budget/{budgetId}/archive");
+        var archiveStatus = archiveResponse.Status;
+        var archiveBody = await archiveResponse.TextAsync();
+
+        Console.WriteLine($"[Test 10] Archive budget HTTP Status: {archiveStatus}");
+        Console.WriteLine($"[Test 10] Archive budget Body: {archiveBody}");
+
+        Assert.That(archiveStatus == 200,
+            $"Expected 200 when archiving budget, got HTTP {archiveStatus}\n{archiveBody}");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+
+        var listStatus = listResponse.Status;
+        var listBody = await listResponse.TextAsync();
+
+        Console.WriteLine($"[Test 10] My-budgets (after archive) HTTP Status: {listStatus}");
+        Console.WriteLine($"[Test 10] My-budgets (after archive) Body: {listBody}");
+
+        Assert.That(listStatus == 200,
+            $"Expected 200 from my-budgets after archive, got HTTP {listStatus}\n{listBody}");
+
+        using var listJson = JsonDocument.Parse(listBody);
+
+        string? statusText = null;
+
+        foreach (var budget in listJson.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("id").GetInt32() == budgetId)
+            {
+                statusText = budget.GetProperty("status").GetString();
+                break;
+            }
+        }
+
+        Assert.That(string.IsNullOrWhiteSpace(statusText) == false,
+            $"Budget id {budgetId} not found in my-budgets after archive");
+
+        Console.WriteLine($"[Test 10] Archived budget status in my-budgets: {statusText}");
+
+        Assert.That(statusText != null && statusText.ToLower().Contains("arch"),
+            $"Expected budget status to indicate archived, got '{statusText}'");
+    }
+
+
 
     [OneTimeTearDown]
     public async Task Teardown()
