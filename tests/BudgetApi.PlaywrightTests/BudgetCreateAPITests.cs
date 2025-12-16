@@ -8,7 +8,7 @@ namespace BudgetApi.PlaywrightTests;
 public class BudgetCreateAPITests : BudgetApiTestBase
 {
     // Test 1(BudgetCreate): Create budget should return 401/403 when user is not authenticated
-    [Test]
+    [Test, Order(1)]
     public async Task Budget_Create_Should_Return_401_Or_403_When_Unauthorized()
     {
         var payload = new { };
@@ -32,7 +32,7 @@ public class BudgetCreateAPITests : BudgetApiTestBase
     }
 
     // Test 2(BudgetCreate): Create budget should return 200 when user is authenticated
-    [Test]
+    [Test, Order(2)]
     public async Task Budget_Create_Should_Return_200_When_Authorized()
     {
         Console.WriteLine("[Test 2] Start: create budget WITH authentication");
@@ -59,4 +59,36 @@ public class BudgetCreateAPITests : BudgetApiTestBase
         Assert.That(status == 200,
             $"Expected 200 when creating budget, got HTTP {status}\n{body}");
     }
+
+    // Test 3(BudgetCreate): Create budget should return 400/422 when name is missing/empty (validation)
+    [Test, Order(3)]
+    public async Task Budget_Create_Should_Return_400_Or_422_When_Name_Is_Missing_Or_Empty()
+    {
+        Console.WriteLine("[Test 3] Start: create budget with invalid name (missing/empty) WITH authentication");
+
+        var authRequest = await CreateAuthorizedRequest("TEST_USER_EMAIL", "TEST_USER_PASSWORD", "Test 3");
+
+        var payloadMissing = new { id = 0 };
+        var payloadEmpty = new { id = 0, name = "" };
+
+        Console.WriteLine($"[Test 3] Payload missing name: {JsonSerializer.Serialize(payloadMissing)}");
+        var respMissing = await authRequest.PostAsync("/api/budget/create", new() { DataObject = payloadMissing });
+        var statusMissing = respMissing.Status;
+        var bodyMissing = await respMissing.TextAsync();
+        Console.WriteLine($"[Test 3] Missing-name HTTP Status: {statusMissing}");
+        Console.WriteLine($"[Test 3] Missing-name Body: {bodyMissing}");
+
+        Console.WriteLine($"[Test 3] Payload empty name: {JsonSerializer.Serialize(payloadEmpty)}");
+        var respEmpty = await authRequest.PostAsync("/api/budget/create", new() { DataObject = payloadEmpty });
+        var statusEmpty = respEmpty.Status;
+        var bodyEmpty = await respEmpty.TextAsync();
+        Console.WriteLine($"[Test 3] Empty-name HTTP Status: {statusEmpty}");
+        Console.WriteLine($"[Test 3] Empty-name Body: {bodyEmpty}");
+
+        Assert.That(statusMissing == 400 || statusMissing == 422,
+            $"Expected 400 or 422 for missing name, got HTTP {statusMissing}\n{bodyMissing}");
+        Assert.That(statusEmpty == 400 || statusEmpty == 422,
+            $"Expected 400 or 422 for empty name, got HTTP {statusEmpty}\n{bodyEmpty}");
+    }
+
 }
