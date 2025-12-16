@@ -1,4 +1,5 @@
-﻿using budget_api.Models.ViewModel;
+﻿using budget_api.Models.Dto;
+using budget_api.Models.ViewModel;
 using budget_api.Services;
 using budget_api.Services.Errors;
 using budget_api.Services.Interfaces;
@@ -133,6 +134,16 @@ namespace budget_api.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _budgetService.GetUserBudgetsAsync(userId);
+            return HandleServiceResult(result);
+        }
+        
+        [HttpPost("my-budgets-datatable")]
+        public async Task<IActionResult> GetMyBudgetsDataTable([FromBody] DataTableRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _budgetService.GetUserBudgetsDataTableAsync(userId, request);
             return HandleServiceResult(result);
         }
 

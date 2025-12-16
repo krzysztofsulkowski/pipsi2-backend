@@ -11,7 +11,7 @@ namespace budget_api.Services.Interfaces
         Task<ServiceResult<BudgetViewModel>> GetBudgetByIdAsync(int budgetId, string userId);
         Task<ServiceResult> AcceptInvitationAsync(Guid token);
         Task<ServiceResult<InvitationResultData>> CreateInvitationAsync(int budgetId, string recipientEmail, string inviterUserId);
-
+        Task<ServiceResult<DataTableResponse<BudgetDataTableDto>>> GetUserBudgetsDataTableAsync(string userId, DataTableRequest request);
         Task<ServiceResult> ArchiveBudgetAsync(int budgetId, string userId);
         Task<ServiceResult> UnarchiveBudgetAsync(int budgetId, string userId);
         Task<ServiceResult<List<BudgetSummaryViewModel>>> GetUserBudgetsAsync(string userId);

@@ -283,6 +283,71 @@ namespace budget_api.Services
             }
         }
 
+         public async Task<ServiceResult<DataTableResponse<BudgetDataTableDto>>> GetUserBudgetsDataTableAsync(string userId, DataTableRequest request)
+        {
+            try
+            {
+                string[] columnNames = { "Name", "CreationDate", "Status", "UserRole" };
+                string sortColumn = (request.OrderColumn >= 0 && request.OrderColumn < columnNames.Length) ? columnNames[request.OrderColumn] : "CreationDate";
+                bool sortDesc = string.Equals(request.OrderDir, "desc", StringComparison.OrdinalIgnoreCase);
+
+                var query = _context.UserBudgets
+                    .Where(ub => ub.UserId == userId)
+                    .Include(ub => ub.Budget)
+                    .AsQueryable();
+
+                var totalRecords = await query.CountAsync();
+
+                if (!string.IsNullOrWhiteSpace(request.SearchValue))
+                {
+                    string search = request.SearchValue.ToLower();
+                    query = query.Where(ub =>
+                        (ub.Budget.Name != null && ub.Budget.Name.ToLower().Contains(search)) ||
+                        ((ub.Budget.IsArchived ? "zarchiwizowany" : "aktywny").Contains(search)) ||
+                        ((ub.Role == UserRoleInBudget.Owner ? "właściciel" : "członek").Contains(search))
+                    );
+                }
+
+                var recordsFiltered = await query.CountAsync();
+
+                query = sortColumn switch
+                {
+                    "Name" => sortDesc ? query.OrderByDescending(ub => ub.Budget.Name) : query.OrderBy(ub => ub.Budget.Name),
+                    "CreationDate" => sortDesc ? query.OrderByDescending(ub => ub.Budget.CreationDate) : query.OrderBy(ub => ub.Budget.CreationDate),
+                    "Status" => sortDesc ? query.OrderByDescending(ub => ub.Budget.IsArchived) : query.OrderBy(ub => ub.Budget.IsArchived),
+                    "UserRole" => sortDesc ? query.OrderByDescending(ub => ub.Role) : query.OrderBy(ub => ub.Role),
+                    _ => sortDesc ? query.OrderByDescending(ub => ub.Budget.CreationDate) : query.OrderBy(ub => ub.Budget.CreationDate)
+                };
+
+                var data = await query
+                    .Skip(request.Start)
+                    .Take(request.Length)
+                    .Select(ub => new BudgetDataTableDto
+                    {
+                        Name = ub.Budget.Name,
+                        CreationDate = ub.Budget.CreationDate,
+                        Status = ub.Budget.IsArchived ? "Zarchiwizowany" : "Aktywny",
+                        UserRole = ub.Role == UserRoleInBudget.Owner ? "Właściciel" : "Członek"
+                    })
+                    .ToListAsync();
+
+                var response = new DataTableResponse<BudgetDataTableDto>
+                {
+                    Draw = request.Draw,
+                    RecordsTotal = totalRecords,
+                    RecordsFiltered = recordsFiltered,
+                    Data = data
+                };
+
+                return ServiceResult<DataTableResponse<BudgetDataTableDto>>.Success(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pobierania listy budżetów w formacie DataTable dla użytkownika {UserId}.", userId);
+                return ServiceResult<DataTableResponse<BudgetDataTableDto>>.Failure(CommonErrors.DataProcessingError());
+            }
+        }
+
         public async Task<ServiceResult> EditBudgetAsync(int budgetId, EditBudgetViewModel model, string userId)
         {
             try
