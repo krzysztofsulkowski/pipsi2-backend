@@ -956,6 +956,62 @@ public class BudgetCoreAPITests
             $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
     }
 
+    // Test 13(BudgetCore): Get budget by id should return 400 when budget does not exist (authenticated user)
+    [Test, Order(13)]
+    public async Task Budget_GetById_Should_Return_400_When_Budget_Does_Not_Exist()
+    {
+        Console.WriteLine("[Test 13] Start: get non-existing budget by ID WITH authentication");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = email, password = password } }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 13] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 13] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var nonExistingBudgetId = 999999;
+
+        var response = await authRequest.GetAsync($"/api/budget/{nonExistingBudgetId}");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 13] Get budget by ID HTTP Status: {status}");
+        Console.WriteLine($"[Test 13] Get budget by ID Body: {body}");
+
+        Assert.That(status == 400 && body.Contains("Error Budget.NotFound"),
+            $"Expected 400 Budget.NotFound for non-existing budget, got HTTP {status}\n{body}");
+    }
+
 
     [OneTimeTearDown]
     public async Task Teardown()
