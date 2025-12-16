@@ -1558,6 +1558,100 @@ public class BudgetCoreAPITests
             $"Expected budget status to indicate active after unarchive, got '{statusText}'");
     }
 
+    // Test 19(BudgetCore): Unarchive active budget should return 400/409 (authenticated user)
+    [Test, Order(19)]
+    public async Task Budget_Unarchive_Should_Return_400_Or_409_When_Already_Active()
+    {
+        Console.WriteLine("[Test 19] Start: create budget (active), then unarchive it, expect error");
+
+        var email = Environment.GetEnvironmentVariable("TEST_USER_EMAIL");
+        var password = Environment.GetEnvironmentVariable("TEST_USER_PASSWORD");
+
+        Assert.That(string.IsNullOrWhiteSpace(email) == false, "TEST_USER_EMAIL is missing");
+        Assert.That(string.IsNullOrWhiteSpace(password) == false, "TEST_USER_PASSWORD is missing");
+
+        var loginResponse = await _request.PostAsync(
+            "/api/authentication/login",
+            new() { DataObject = new { email = email, password = password } }
+        );
+
+        var loginStatus = loginResponse.Status;
+        var loginBody = await loginResponse.TextAsync();
+
+        Console.WriteLine($"[Test 19] Login HTTP Status: {loginStatus}");
+        Console.WriteLine($"[Test 19] Login Body: {loginBody}");
+
+        Assert.That(loginStatus == 200, $"Login failed\n{loginBody}");
+
+        using var loginJson = JsonDocument.Parse(loginBody);
+        var token = loginJson.RootElement.GetProperty("token").GetString();
+
+        Assert.That(string.IsNullOrWhiteSpace(token) == false, "JWT token is missing");
+
+        var authRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", $"Bearer {token}" }
+        }
+        });
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = createdName } }
+        );
+
+        var createStatus = createResponse.Status;
+
+        Console.WriteLine($"[Test 19] Create budget HTTP Status: {createStatus}");
+
+        Assert.That(createStatus == 200, $"Expected 200 when creating budget, got HTTP {createStatus}");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listStatus = listResponse.Status;
+        var listBody = await listResponse.TextAsync();
+
+        Console.WriteLine($"[Test 19] My-budgets HTTP Status: {listStatus}");
+        Console.WriteLine($"[Test 19] My-budgets Body: {listBody}");
+
+        Assert.That(listStatus == 200, $"Expected 200 from my-budgets, got HTTP {listStatus}\n{listBody}");
+
+        using var listJson = JsonDocument.Parse(listBody);
+
+        int budgetId = -1;
+
+        foreach (var budget in listJson.RootElement.EnumerateArray())
+        {
+            if (budget.GetProperty("name").GetString() == createdName)
+            {
+                budgetId = budget.GetProperty("id").GetInt32();
+                break;
+            }
+        }
+
+        Assert.That(budgetId > 0, $"Created budget '{createdName}' not found in my-budgets");
+
+        Console.WriteLine($"[Test 19] Created budgetId: {budgetId}");
+
+        var response = await authRequest.PostAsync($"/api/budget/{budgetId}/unarchive");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 19] Unarchive active budget HTTP Status: {status}");
+        Console.WriteLine($"[Test 19] Unarchive active budget Body: {body}");
+
+        Assert.That(status == 400 || status == 409,
+            $"Expected 400 or 409 when unarchiving already active budget, got HTTP {status}\n{body}");
+    }
+
+
     [OneTimeTearDown]
     public async Task Teardown()
     {
