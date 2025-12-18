@@ -17,5 +17,6 @@ namespace budget_api.Services.Interfaces
         Task<ServiceResult<List<BudgetSummaryViewModel>>> GetUserBudgetsAsync(string userId);
         Task<ServiceResult> EditBudgetAsync(int budgetId, EditBudgetViewModel model, string userId);
         Task<ServiceResult> RemoveMemberAsync(int budgetId, string targetUserId, string currentUserId);
+        Task<ServiceResult<List<BudgetMemberDto>>> GetBudgetMembersAsync(int budgetId, string userId);
     }
 }

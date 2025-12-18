@@ -159,6 +159,16 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
+        [HttpGet("{budgetId:int}/members")]
+        public async Task<IActionResult> GetBudgetMembers([FromRoute] int budgetId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _budgetService.GetBudgetMembersAsync(budgetId, userId);
+            return HandleServiceResult(result);
+        }
+
         [HttpDelete("{budgetId:int}/members/{userId}")]
         public async Task<IActionResult> RemoveMember([FromRoute] int budgetId, [FromRoute] string userId)
         {

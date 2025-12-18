@@ -426,5 +426,92 @@ namespace budget_api.Services
                 return ServiceResult.Failure("Wystąpił błąd podczas usuwania członka lub opuszczania budżetu.");
             }
         }
+
+        public async Task<ServiceResult<List<BudgetMemberDto>>> GetBudgetMembersAsync(int budgetId, string userId)
+        {
+            try
+            {
+                var hasAccess = await _context.UserBudgets
+                    .AnyAsync(ub => ub.BudgetId == budgetId && ub.UserId == userId);
+
+                if (!hasAccess)
+                {
+                    return ServiceResult<List<BudgetMemberDto>>.Failure(CommonErrors.NotFound(ObjectName, budgetId));
+                }
+
+                var userBudgets = await _context.UserBudgets
+                    .Where(ub => ub.BudgetId == budgetId)
+                    .Include(ub => ub.User)
+                    .Include(ub => ub.Budget)
+                    .ToListAsync();
+
+                var memberDtos = userBudgets.Select(ub =>
+                {
+                    var displayName = ub.User?.UserName;
+                    if (string.IsNullOrWhiteSpace(displayName))
+                    {
+                        displayName = ub.User?.Email ?? "Nieznany użytkownik";
+                    }
+
+                    return new BudgetMemberDto
+                    {
+                        UserId = ub.UserId,
+                        User = displayName,
+                        Date = ub.Budget?.CreationDate ?? DateTime.UtcNow,
+                        Role = ub.Role == UserRoleInBudget.Owner ? "Właściciel" : "Członek",
+                        Status = "Aktywny"
+                    };
+                }).ToList();
+
+                var invitations = await _context.BudgetInvitations
+                    .Where(i => i.BudgetId == budgetId && i.Status != InvitationStatus.Accepted)
+                    .ToListAsync();
+
+                if (invitations.Any())
+                {
+                    var invitedEmails = invitations
+                        .Select(i => i.InvitedUserEmail.ToLowerInvariant())
+                        .Distinct()
+                        .ToList();
+
+                    var invitedUsers = await _userManager.Users
+                        .Where(u => u.Email != null && invitedEmails.Contains(u.Email.ToLower()))
+                        .ToDictionaryAsync(u => u.Email!.ToLower(), u => u);
+
+                    foreach (var invitation in invitations)
+                    {
+                        invitedUsers.TryGetValue(invitation.InvitedUserEmail.ToLowerInvariant(), out var invitedUser);
+
+                        var displayName = invitedUser?.UserName;
+                        if (string.IsNullOrWhiteSpace(displayName))
+                        {
+                            displayName = invitedUser?.Email ?? invitation.InvitedUserEmail;
+                        }
+
+                        memberDtos.Add(new BudgetMemberDto
+                        {
+                            UserId = invitedUser?.Id,
+                            User = displayName,
+                            Date = invitation.CreatedAt,
+                            Role = "Członek",
+                            Status = invitation.Status switch
+                            {
+                                InvitationStatus.Pending => "Zaproszenie Wysłane",
+                                InvitationStatus.Declined => "Zaproszenie Odrzucone",
+                                InvitationStatus.Expired => "Zaproszenie Wygasło",
+                                _ => "Zaproszenie Wysłane"
+                            }
+                        });
+                    }
+                }
+
+                return ServiceResult<List<BudgetMemberDto>>.Success(memberDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pobierania listy członków budżetu {BudgetId} dla użytkownika {UserId}.", budgetId, userId);
+                return ServiceResult<List<BudgetMemberDto>>.Failure(CommonErrors.FetchFailed(ObjectName, budgetId.ToString()));
+            }
+        }
     }
 }
