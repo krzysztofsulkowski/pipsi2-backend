@@ -28,6 +28,11 @@ namespace budget_api.Services
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(model.Name))
+                {
+                    return ServiceResult.Failure("Nazwa budżetu jest wymagana.");
+                }
+
                 var newBudget = new Budget
                 {
                     Name = model.Name
