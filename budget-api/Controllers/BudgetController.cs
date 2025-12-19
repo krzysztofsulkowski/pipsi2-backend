@@ -1,4 +1,5 @@
-﻿using budget_api.Models.ViewModel;
+﻿using budget_api.Models.Dto;
+using budget_api.Models.ViewModel;
 using budget_api.Services;
 using budget_api.Services.Errors;
 using budget_api.Services.Interfaces;
@@ -49,11 +50,6 @@ namespace budget_api.Controllers
             try
             {
                 var inviterUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(inviterUserId))
-                {
-                    return Unauthorized(new { message = "Nie można zidentyfikować użytkownika wysyłającego zaproszenie." });
-                }
-
                 var invitationResult = await _budgetService.CreateInvitationAsync(model.BudgetId, model.RecipientEmail, inviterUserId);
 
                 if (!invitationResult.IsSuccess)
@@ -140,11 +136,6 @@ namespace budget_api.Controllers
                 return BadRequest(ModelState);
             }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "Nie można zidentyfikować użytkownika." });
-            }
-
             var result = await _budgetService.CreateBudgetAsync(model, userId);
             return HandleServiceResult(result);
         }
@@ -160,8 +151,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> GetBudgetById(int budgetId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
             var result = await _budgetService.GetBudgetByIdAsync(budgetId, userId);
 
             return HandleServiceResult(result);
@@ -179,9 +168,15 @@ namespace budget_api.Controllers
         public async Task<IActionResult> GetMyBudgets()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
             var result = await _budgetService.GetUserBudgetsAsync(userId);
+            return HandleServiceResult(result);
+        }
+        
+        [HttpPost("my-budgets-datatable")]
+        public async Task<IActionResult> GetMyBudgetsDataTable([FromBody] DataTableRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _budgetService.GetUserBudgetsDataTableAsync(userId, request);
             return HandleServiceResult(result);
         }
 
@@ -203,9 +198,15 @@ namespace budget_api.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
             var result = await _budgetService.EditBudgetAsync(budgetId, model, userId);
+            return HandleServiceResult(result);
+        }
+
+        [HttpGet("{budgetId:int}/members")]
+        public async Task<IActionResult> GetBudgetMembers([FromRoute] int budgetId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _budgetService.GetBudgetMembersAsync(budgetId, userId);
             return HandleServiceResult(result);
         }
 
@@ -225,8 +226,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> RemoveMember([FromRoute] int budgetId, [FromRoute] string userId)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
-
             var result = await _budgetService.RemoveMemberAsync(budgetId, userId, currentUserId);
             return HandleServiceResult(result);
         }
@@ -244,8 +243,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> ArchiveBudget([FromRoute] int budgetId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
             var result = await _budgetService.ArchiveBudgetAsync(budgetId, userId);
             return HandleServiceResult(result);
         }
@@ -261,8 +258,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> UnarchiveBudget([FromRoute] int budgetId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
             var result = await _budgetService.UnarchiveBudgetAsync(budgetId, userId);
             return HandleServiceResult(result);
         }

@@ -37,7 +37,6 @@ namespace budget_api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.AddIncomeAsync(budgetId, model, userId);
             return HandleServiceResult(result);
@@ -59,7 +58,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> SearchTransactions([FromRoute] int budgetId, [FromBody] DataTableRequest request)
         {
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.SearchTransactionsAsync(budgetId, request, userId);
             return HandleServiceResult(result);
@@ -77,7 +75,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> GetIncome([FromRoute] int budgetId, [FromRoute] int incomeId)
         {
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.GetIncomeDetailsAsync(budgetId, incomeId, userId);
             return HandleServiceResult(result);
@@ -96,7 +93,6 @@ namespace budget_api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.EditIncomeAsync(budgetId, incomeId, model, userId);
             return HandleServiceResult(result);
@@ -114,7 +110,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> DeleteIncome([FromRoute] int budgetId, [FromRoute] int incomeId)
         {
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.DeleteIncomeAsync(budgetId, incomeId, userId);
             return HandleServiceResult(result);
@@ -136,7 +131,6 @@ namespace budget_api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.AddExpenseAsync(budgetId, model, userId);
             return HandleServiceResult(result);
@@ -151,7 +145,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> GetExpense([FromRoute] int budgetId, [FromRoute] int expenseId)
         {
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.GetExpenseDetailsAsync(budgetId, expenseId, userId);
             return HandleServiceResult(result);
@@ -170,7 +163,6 @@ namespace budget_api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.EditExpenseAsync(budgetId, expenseId, model, userId);
             return HandleServiceResult(result);
@@ -188,7 +180,6 @@ namespace budget_api.Controllers
         public async Task<IActionResult> DeleteExpense([FromRoute] int budgetId, [FromRoute] int expenseId)
         {
             var userId = CurrentUserId;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _transactionService.DeleteExpenseAsync(budgetId, expenseId, userId);
             return HandleServiceResult(result);

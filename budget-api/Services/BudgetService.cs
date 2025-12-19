@@ -28,6 +28,11 @@ namespace budget_api.Services
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(model.Name))
+                {
+                    return ServiceResult.Failure("Nazwa budżetu jest wymagana.");
+                }
+
                 var newBudget = new Budget
                 {
                     Name = model.Name
@@ -281,6 +286,71 @@ namespace budget_api.Services
             }
         }
 
+         public async Task<ServiceResult<DataTableResponse<BudgetDataTableDto>>> GetUserBudgetsDataTableAsync(string userId, DataTableRequest request)
+        {
+            try
+            {
+                string[] columnNames = { "Name", "CreationDate", "Status", "UserRole" };
+                string sortColumn = (request.OrderColumn >= 0 && request.OrderColumn < columnNames.Length) ? columnNames[request.OrderColumn] : "CreationDate";
+                bool sortDesc = string.Equals(request.OrderDir, "desc", StringComparison.OrdinalIgnoreCase);
+
+                var query = _context.UserBudgets
+                    .Where(ub => ub.UserId == userId)
+                    .Include(ub => ub.Budget)
+                    .AsQueryable();
+
+                var totalRecords = await query.CountAsync();
+
+                if (!string.IsNullOrWhiteSpace(request.SearchValue))
+                {
+                    string search = request.SearchValue.ToLower();
+                    query = query.Where(ub =>
+                        (ub.Budget.Name != null && ub.Budget.Name.ToLower().Contains(search)) ||
+                        ((ub.Budget.IsArchived ? "zarchiwizowany" : "aktywny").Contains(search)) ||
+                        ((ub.Role == UserRoleInBudget.Owner ? "właściciel" : "członek").Contains(search))
+                    );
+                }
+
+                var recordsFiltered = await query.CountAsync();
+
+                query = sortColumn switch
+                {
+                    "Name" => sortDesc ? query.OrderByDescending(ub => ub.Budget.Name) : query.OrderBy(ub => ub.Budget.Name),
+                    "CreationDate" => sortDesc ? query.OrderByDescending(ub => ub.Budget.CreationDate) : query.OrderBy(ub => ub.Budget.CreationDate),
+                    "Status" => sortDesc ? query.OrderByDescending(ub => ub.Budget.IsArchived) : query.OrderBy(ub => ub.Budget.IsArchived),
+                    "UserRole" => sortDesc ? query.OrderByDescending(ub => ub.Role) : query.OrderBy(ub => ub.Role),
+                    _ => sortDesc ? query.OrderByDescending(ub => ub.Budget.CreationDate) : query.OrderBy(ub => ub.Budget.CreationDate)
+                };
+
+                var data = await query
+                    .Skip(request.Start)
+                    .Take(request.Length)
+                    .Select(ub => new BudgetDataTableDto
+                    {
+                        Name = ub.Budget.Name,
+                        CreationDate = ub.Budget.CreationDate,
+                        Status = ub.Budget.IsArchived ? "Zarchiwizowany" : "Aktywny",
+                        UserRole = ub.Role == UserRoleInBudget.Owner ? "Właściciel" : "Członek"
+                    })
+                    .ToListAsync();
+
+                var response = new DataTableResponse<BudgetDataTableDto>
+                {
+                    Draw = request.Draw,
+                    RecordsTotal = totalRecords,
+                    RecordsFiltered = recordsFiltered,
+                    Data = data
+                };
+
+                return ServiceResult<DataTableResponse<BudgetDataTableDto>>.Success(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pobierania listy budżetów w formacie DataTable dla użytkownika {UserId}.", userId);
+                return ServiceResult<DataTableResponse<BudgetDataTableDto>>.Failure(CommonErrors.DataProcessingError());
+            }
+        }
+
         public async Task<ServiceResult> EditBudgetAsync(int budgetId, EditBudgetViewModel model, string userId)
         {
             try
@@ -356,6 +426,93 @@ namespace budget_api.Services
             {
                 _logger.LogError(ex, "Błąd podczas usuwania członka {TargetUserId} z budżetu {BudgetId} przez {CurrentUserId}.", targetUserId, budgetId, currentUserId);
                 return ServiceResult.Failure(CommonErrors.DeleteFailed("UserBudget"));
+            }
+        }
+
+        public async Task<ServiceResult<List<BudgetMemberDto>>> GetBudgetMembersAsync(int budgetId, string userId)
+        {
+            try
+            {
+                var hasAccess = await _context.UserBudgets
+                    .AnyAsync(ub => ub.BudgetId == budgetId && ub.UserId == userId);
+
+                if (!hasAccess)
+                {
+                    return ServiceResult<List<BudgetMemberDto>>.Failure(CommonErrors.NotFound(ObjectName, budgetId));
+                }
+
+                var userBudgets = await _context.UserBudgets
+                    .Where(ub => ub.BudgetId == budgetId)
+                    .Include(ub => ub.User)
+                    .Include(ub => ub.Budget)
+                    .ToListAsync();
+
+                var memberDtos = userBudgets.Select(ub =>
+                {
+                    var displayName = ub.User?.UserName;
+                    if (string.IsNullOrWhiteSpace(displayName))
+                    {
+                        displayName = ub.User?.Email ?? "Nieznany użytkownik";
+                    }
+
+                    return new BudgetMemberDto
+                    {
+                        UserId = ub.UserId,
+                        User = displayName,
+                        Date = ub.Budget?.CreationDate ?? DateTime.UtcNow,
+                        Role = ub.Role == UserRoleInBudget.Owner ? "Właściciel" : "Członek",
+                        Status = "Aktywny"
+                    };
+                }).ToList();
+
+                var invitations = await _context.BudgetInvitations
+                    .Where(i => i.BudgetId == budgetId && i.Status != InvitationStatus.Accepted)
+                    .ToListAsync();
+
+                if (invitations.Any())
+                {
+                    var invitedEmails = invitations
+                        .Select(i => i.InvitedUserEmail.ToLowerInvariant())
+                        .Distinct()
+                        .ToList();
+
+                    var invitedUsers = await _userManager.Users
+                        .Where(u => u.Email != null && invitedEmails.Contains(u.Email.ToLower()))
+                        .ToDictionaryAsync(u => u.Email!.ToLower(), u => u);
+
+                    foreach (var invitation in invitations)
+                    {
+                        invitedUsers.TryGetValue(invitation.InvitedUserEmail.ToLowerInvariant(), out var invitedUser);
+
+                        var displayName = invitedUser?.UserName;
+                        if (string.IsNullOrWhiteSpace(displayName))
+                        {
+                            displayName = invitedUser?.Email ?? invitation.InvitedUserEmail;
+                        }
+
+                        memberDtos.Add(new BudgetMemberDto
+                        {
+                            UserId = invitedUser?.Id,
+                            User = displayName,
+                            Date = invitation.CreatedAt,
+                            Role = "Członek",
+                            Status = invitation.Status switch
+                            {
+                                InvitationStatus.Pending => "Zaproszenie Wysłane",
+                                InvitationStatus.Declined => "Zaproszenie Odrzucone",
+                                InvitationStatus.Expired => "Zaproszenie Wygasło",
+                                _ => "Zaproszenie Wysłane"
+                            }
+                        });
+                    }
+                }
+
+                return ServiceResult<List<BudgetMemberDto>>.Success(memberDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pobierania listy członków budżetu {BudgetId} dla użytkownika {UserId}.", budgetId, userId);
+                return ServiceResult<List<BudgetMemberDto>>.Failure(CommonErrors.FetchFailed(ObjectName, budgetId.ToString()));
             }
         }
     }
