@@ -9,6 +9,9 @@
         public static ServiceError Unauthorized() => new ServiceError(
             "Auth.Unauthorized", "Brak autoryzacji. Musisz być zalogowany, aby wykonać tę akcję.");
 
+        public static ServiceError Forbidden(string details = "Brak uprawnień do wykonania tej operacji.") => new ServiceError(
+           "Auth.Forbidden", details);
+
         public static ServiceError BadRequest(string details = "Nieprawidłowe żądanie. Sprawdź poprawność wysłanych danych.") => new ServiceError(
             "Request.BadRequest", details);
 
@@ -31,10 +34,10 @@
             string message = details ?? $"Wystąpił nieoczekiwany błąd podczas pobierania danych dla obiektu '{objectName}'.";
             return new ServiceError($"{objectName}.FetchFailed", message);
         }
-        public static ServiceError DeleteFailed(string objectName, object id, string details = null)
+        public static ServiceError DeleteFailed(string objectName, object id = null, string details = null)
         {
-            string message = details ?? $"Nie udało się usunąć obiektu '{objectName}' o identyfikatorze '{id}'.";
-            return new ServiceError($"{objectName}.DeleteFailed", message);
+            var idPart = id != null ? $" (ID: {id})" : "";
+            return new ServiceError($"{objectName}.DeleteFailed", details ?? $"Nie udało się usunąć obiektu '{objectName}'{idPart}.");
         }
     }
 }

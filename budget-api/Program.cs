@@ -124,6 +124,9 @@ builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IHistoryLogService, HistoryLogService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -154,6 +157,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddHealthChecks();
@@ -172,11 +178,15 @@ app.UseForwardedHeaders(forwardedHeadersOptions);
 
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())       
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+//dla demonstracji odkomentować
+//app.UseSwagger();
+//app.UseSwaggerUI();
 
 app.UseCors();
 app.UseAuthentication();
@@ -195,10 +205,10 @@ using (var scope = app.Services.CreateScope())
 
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    //recurringJobManager.AddOrUpdate<eNotificationService>(
-    //    "CheckAndSendExpirationNotifications",
-    //    service => service.SendEmailNotifications(),
-    //    Cron.Daily);
+    recurringJobManager.AddOrUpdate<TransactionService>(
+        "CheckAndSendNotifications",
+        service => service.ProcessRecurringAndPlannedExpensesAsync(),
+        Cron.Daily);
 }
 
 app.Run();

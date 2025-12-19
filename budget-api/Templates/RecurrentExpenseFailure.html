@@ -1,0 +1,195 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Wstrzymanie planowanej transakcji</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #272C3C;
+            line-height: 1.6;
+            background-color: #F4F5F7;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .wrapper {
+            width: 100%;
+            background-color: #F4F5F7;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(39, 44, 60, 0.1);
+        }
+
+        .header-bar {
+            height: 6px;
+            width: 100%;
+            background: linear-gradient(90deg, #EF4444 0%, #D80000 100%);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-text {
+            color: #6A7192;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #272C3C;
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6A7192;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #444;
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+
+        .button {
+            background-color: #272C3C;
+            color: #ffffff !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-bottom: 3px solid #1a1e29;
+            transition: background-color 0.3s;
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            background-color: #FFECEC;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            text-align: center;
+            line-height: 60px;
+            font-size: 24px;
+            color: #EF4444;
+        }
+
+        .highlight-name {
+            color: #272C3C;
+            font-weight: bold;
+        }
+
+        .note {
+            font-size: 14px;
+            color: #444;
+            background-color: #FFF6F6;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #EF4444;
+            margin-top: 30px;
+        }
+
+        .highlight-value-red {
+            color: #EF4444;
+            font-weight: bold;
+            font-size: 22px;
+            display: block;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #F4F5F7;
+            border-top: 1px solid #C9CBD6;
+        }
+
+            .footer p {
+                font-size: 12px;
+                color: #969CBD;
+                margin: 5px 0;
+            }
+
+            .footer strong {
+                color: #6A7192;
+            }
+
+            .footer a {
+                color: #6A7192;
+                text-decoration: underline;
+            }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header-bar"></div>
+
+            <div class="content">
+                <div class="icon-circle">❌</div>
+
+                <h1>Transakcja Wstrzymana!</h1>
+                <div class="subtitle" style="color: #D80000;">Wymagana akcja z Twojej strony.</div>
+
+                <p style="text-align: center;">Nie mogliśmy automatycznie zaksięgować Twojej planowanej transakcji z budżetu <span class="highlight-name">{BudgetName}</span>.</p>
+
+                <p style="text-align: center; margin-bottom: 10px;">Tytuł: <strong>{TransactionTitle}</strong></p>
+
+                <div class="note">
+                    <p style="margin-bottom: 5px; font-weight: bold; color: #272C3C; font-size: 16px; text-align: center;">
+                        Powód odrzucenia: <span style="color: #EF4444; display: block; font-size: 18px; margin-top: 5px;">{Reason}</span>
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #FFCDCD; margin: 15px 0;">
+                    <strong style="font-size: 14px; display: block; text-align: center; margin-bottom: 5px;">Nieujęta Kwota:</strong>
+                    <span class="highlight-value-red">-{Amount}</span>
+                </div>
+
+                <p style="margin-top: 30px;">
+                    <strong>Działania:</strong> Wprowadź brakującą kwotę lub ręcznie zmodyfikuj transakcję, aby system mógł ją wkrótce ponowić (tylko dla transakcji typu *Planowana*).
+                </p>
+
+                <p style="margin-top: 30px; font-weight: bold;">
+                    Pozdrawiamy,<br>
+                    <strong>Zespół Balancer</strong>
+                </p>
+            </div>
+
+            <div class="footer">
+                <p>Wiadomość wysłana automatycznie przez system Balancer.</p>
+                <p>&copy; 2025 Balancer App. Wszelkie prawa zastrzeżone.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

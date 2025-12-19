@@ -1,8 +1,9 @@
 ﻿using budget_api.Models.ViewModel;
+using budget_api.Services.Errors;
 using budget_api.Services.Interfaces;
 using budget_api.Services.Results;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using budget_api.Services.Errors;
+using System.Globalization;
 
 namespace budget_api.Services
 {
@@ -141,6 +142,60 @@ namespace budget_api.Services
             emailTemplateContent = emailTemplateContent.Replace("{InvitationUrl}", invitationUrl);
 
             return emailTemplateContent;
+        }
+
+        public async Task<ServiceResult> SendRecurrentExpenseSuccessNotificationAsync(string recipientEmail, string budgetName, string transactionTitle, decimal amount)
+        {
+            return await SendRecurrentExpenseNotificationAsync(recipientEmail, budgetName, transactionTitle, amount, "success");
+        }
+
+        public async Task<ServiceResult> SendRecurrentExpenseFailedNotificationAsync(string recipientEmail, string budgetName, string transactionTitle, decimal amount, string reason)
+        {
+            return await SendRecurrentExpenseNotificationAsync(recipientEmail, budgetName, transactionTitle, amount, "failure", reason);
+        }
+
+        private async Task<ServiceResult> SendRecurrentExpenseNotificationAsync(string recipientEmail, string budgetName, string transactionTitle, decimal amount, string status, string? failureReason = null)
+        {
+            try
+            {
+                string formattedAmount = amount.ToString("N2", CultureInfo.GetCultureInfo("pl-PL")) + " zł";
+
+                string subject = status == "success"
+                    ? $"Pomyślna realizacja cyklicznego wydatku: {transactionTitle}"
+                    : $"Ważne! Nie wykonano planowanej transakcji: {transactionTitle}";
+
+                string templateFileName = status == "success"
+                    ? "RecurrentExpenseSuccess.html"
+                    : "RecurrentExpenseFailure.html";
+
+                string? emailBody = await CreateRecurrentExpenseBodyAsync(budgetName, transactionTitle, formattedAmount, status, failureReason, templateFileName);
+
+                if (emailBody == null)
+                {
+                    return ServiceResult.Failure("Nie udało się utworzyć treści e-maila.");
+                }
+
+                await _emailSender.SendEmailAsync(recipientEmail, subject, emailBody);
+                _logger.LogInformation("Wysłano powiadomienie o transakcji '{Title}' ({Status}) do {recipientEmail}", transactionTitle, status, recipientEmail);
+                return ServiceResult.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas wysyłania powiadomienia o transakcji cyklicznej ({Status}) dla {recipientEmail}", status, recipientEmail);
+                return ServiceResult.Failure(EmailError.SendFailed());
+            }
+        }
+
+        private async Task<string?> CreateRecurrentExpenseBodyAsync(string budgetName, string transactionTitle, string formattedAmount, string status, string? failureReason, string templateFileName)
+        {
+            string emailBody = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Templates", templateFileName));
+
+            emailBody = emailBody.Replace("{BudgetName}", budgetName);
+            emailBody = emailBody.Replace("{TransactionTitle}", transactionTitle);
+            emailBody = emailBody.Replace("{Amount}", formattedAmount);
+            emailBody = emailBody.Replace("{Reason}", failureReason ?? "Niedostępne");
+
+            return emailBody;
         }
     }
 }

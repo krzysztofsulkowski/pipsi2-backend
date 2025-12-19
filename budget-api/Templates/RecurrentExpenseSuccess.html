@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pomyślnie zrealizowano transakcję</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #272C3C;
+            line-height: 1.6;
+            background-color: #F4F5F7;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .wrapper {
+            width: 100%;
+            background-color: #F4F5F7;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(39, 44, 60, 0.1);
+        }
+
+        .header-bar {
+            height: 6px;
+            width: 100%;
+            /* Zmiana koloru na Zielony dla sukcesu */
+            background: linear-gradient(90deg, #10B981 0%, #00875A 100%);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-text {
+            color: #6A7192;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #272C3C;
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6A7192;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #444;
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+
+        .button {
+            background-color: #272C3C;
+            color: #ffffff !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-bottom: 3px solid #1a1e29;
+            transition: background-color 0.3s;
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            background-color: #E6F8ED;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            text-align: center;
+            line-height: 60px;
+            font-size: 24px;
+            color: #10B981;
+        }
+
+        .highlight-name {
+            color: #272C3C;
+            font-weight: bold;
+        }
+
+        .note {
+            font-size: 14px;
+            color: #444;
+            background-color: #F6FFF9;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #10B981;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .highlight-value-green {
+            color: #10B981;
+            font-weight: bold;
+            font-size: 22px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #F4F5F7;
+            border-top: 1px solid #C9CBD6;
+        }
+
+            .footer p {
+                font-size: 12px;
+                color: #969CBD;
+                margin: 5px 0;
+            }
+
+            .footer strong {
+                color: #6A7192;
+            }
+
+            .footer a {
+                color: #6A7192;
+                text-decoration: underline;
+            }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header-bar"></div>
+
+            <div class="content">
+                <div class="icon-circle">✔️</div>
+
+                <h1>Transakcja zrealizowana!</h1>
+                <div class="subtitle" style="color: #00875A;">Wydatki cykliczne pod kontrolą.</div>
+
+                <p style="text-align: center;">Powiadamiamy o automatycznym zaksięgowaniu Twojej planowanej/cyklicznej transakcji z budżetu <span class="highlight-name">{BudgetName}</span>.</p>
+
+                <p style="text-align: center; margin-bottom: 10px;">Tytuł: <strong>{TransactionTitle}</strong></p>
+
+                <div class="note">
+                    <strong>Zaksięgowana Kwota:</strong>
+                    <span class="highlight-value-green">-{Amount}</span>
+                    <p style="margin-top: 15px; margin-bottom: 0; font-size: 14px; color: #6A7192;">Saldo w budżecie zostało automatycznie zaktualizowane.</p>
+                </div>
+
+                <p style="margin-top: 30px; font-weight: bold;">
+                    Pozdrawiamy,<br>
+                    <strong>Zespół Balancer</strong>
+                </p>
+            </div>
+
+            <div class="footer">
+                <p>Wiadomość wysłana automatycznie przez system Balancer.</p>
+                <p>&copy; 2025 Balancer App. Wszelkie prawa zastrzeżone.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
