@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using NUnit.Framework;
+using System.Text.Json;
 
 namespace BudgetApi.PlaywrightTests;
 
@@ -49,4 +50,38 @@ public class PaymentMethodApiTests : BudgetApiTestBase
         Assert.That(!string.IsNullOrWhiteSpace(body), "Response body is empty");
     }
 
+    // Get payment methods dictionary should return valid schema
+    [Test]
+    public async Task Dictionaries_Should_Return_Valid_Schema_When_Authorized()
+    {
+        var authRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "[PaymentMethod Test 3 - Schema]"
+        );
+
+        var response = await authRequest.GetAsync("/api/dictionaries");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[PaymentMethod Test 3 - Schema] HTTP Status: " + status);
+        Console.WriteLine("[PaymentMethod Test 3 - Schema] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+        Assert.That(!string.IsNullOrWhiteSpace(body), "Response body is empty");
+
+        using var json = JsonDocument.Parse(body);
+        Assert.That(json.RootElement.ValueKind == JsonValueKind.Array, "Response is not an array");
+
+        foreach (var item in json.RootElement.EnumerateArray())
+        {
+            Assert.That(item.TryGetProperty("value", out var value), "Missing 'value'");
+            Assert.That(value.ValueKind == JsonValueKind.Number, "'value' is not a number");
+
+            Assert.That(item.TryGetProperty("name", out var name), "Missing 'name'");
+            Assert.That(name.ValueKind == JsonValueKind.String, "'name' is not a string");
+        }
+    }
 }
