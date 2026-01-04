@@ -34,4 +34,39 @@ public class HistoryLogApiTests : BudgetApiTestBase
 
         Assert.That(status == 401 || status == 403, $"Expected 401 or 403, got {status}\n{body}");
     }
+
+    // Get history logs should return 403 when user is authenticated but not admin
+    [Test]
+    public async Task HistoryLog_GetHistoryLogs_Should_Return_403_For_Normal_User()
+    {
+        var userRequest = await CreateAuthorizedRequest(
+            "TEST_USER2_EMAIL",
+            "TEST_USER2_PASSWORD",
+            "[HistoryLog Test 2 - User]"
+        );
+
+        var response = await userRequest.PostAsync("/api/historyLog/get-history-logs", new APIRequestContextOptions
+        {
+            DataObject = new
+            {
+                draw = 1,
+                start = 0,
+                length = 10,
+                searchValue = "",
+                orderColumn = 0,
+                orderDir = "asc",
+                extraFilters = new { }
+            }
+        });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[HistoryLog Test 2 - User] HTTP Status: " + status);
+        Console.WriteLine("[HistoryLog Test 2 - User] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 403, $"Expected 403, got {status}\n{body}");
+    }
+
 }
