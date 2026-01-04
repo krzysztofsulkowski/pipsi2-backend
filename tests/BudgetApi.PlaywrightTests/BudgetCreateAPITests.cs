@@ -128,5 +128,55 @@ public class BudgetCreateAPITests : BudgetApiTestBase
             $"Expected created budget name to appear in my-budgets, but it was not found.\n{listBody}");
     }
 
+    // Test 5(BudgetCreate): Create budget with duplicate name should return 200 and create separate budget
+    [Test, Order(5)]
+    public async Task Budget_Create_Should_Allow_Duplicate_Names_And_Create_Separate_Budgets()
+    {
+        Console.WriteLine("[Test 5] Start: create two budgets with the same name and verify both exist");
+
+        var authRequest = await CreateAuthorizedRequest("TEST_USER_EMAIL", "TEST_USER_PASSWORD", "Test 5");
+
+        var duplicatedName = $"Duplicated budget {Guid.NewGuid()}";
+        var payload = new { id = 0, name = duplicatedName };
+
+        Console.WriteLine($"[Test 5] Create payload: {JsonSerializer.Serialize(payload)}");
+
+        var firstResponse = await authRequest.PostAsync("/api/budget/create", new() { DataObject = payload });
+        var firstStatus = firstResponse.Status;
+        var firstBody = await firstResponse.TextAsync();
+
+        Console.WriteLine($"[Test 5] First create HTTP Status: {firstStatus}");
+        Console.WriteLine($"[Test 5] First create Body: {firstBody}");
+
+        Assert.That(firstStatus == 200 || firstStatus == 201,
+            $"Expected 200/201 on first create, got HTTP {firstStatus}\n{firstBody}");
+
+        var secondResponse = await authRequest.PostAsync("/api/budget/create", new() { DataObject = payload });
+        var secondStatus = secondResponse.Status;
+        var secondBody = await secondResponse.TextAsync();
+
+        Console.WriteLine($"[Test 5] Second create HTTP Status: {secondStatus}");
+        Console.WriteLine($"[Test 5] Second create Body: {secondBody}");
+
+        Assert.That(secondStatus == 200 || secondStatus == 201,
+            $"Expected 200/201 on second create with same name, got HTTP {secondStatus}\n{secondBody}");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listStatus = listResponse.Status;
+        var listBody = await listResponse.TextAsync();
+
+        Console.WriteLine($"[Test 5] My-budgets HTTP Status: {listStatus}");
+        Console.WriteLine($"[Test 5] My-budgets Body: {listBody}");
+
+        Assert.That(listStatus == 200,
+            $"Expected 200 from my-budgets, got HTTP {listStatus}\n{listBody}");
+
+        var occurrences = listBody.Split(duplicatedName).Length - 1;
+
+        Assert.That(occurrences >= 2,
+            $"Expected at least 2 budgets with the same name, found {occurrences}\n{listBody}");
+    }
+
+
 
 }

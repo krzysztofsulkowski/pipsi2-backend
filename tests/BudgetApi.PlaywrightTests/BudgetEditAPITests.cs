@@ -103,4 +103,32 @@ public class BudgetEditAPITests : BudgetApiTestBase
         Assert.That(isForbidden || isMaskedNotFound,
             $"Expected 403 or masked not-found (400 Error Budget.NotFound) when editing budget without permission, got HTTP {status}\n{body}");
     }
+
+    // Test 3(BudgetEdit): Edit budget should return 401/403 when user is not authenticated
+    [Test]
+    public async Task Budget_Edit_Should_Return_401_Or_403_When_Unauthorized()
+    {
+        Console.WriteLine("[Test 3] Start: try to edit budget WITHOUT authentication");
+
+        var budgetId = 1;
+
+        var payload = new { id = budgetId, name = $"Updated budget {Guid.NewGuid()}" };
+
+        Console.WriteLine($"[Test 3] Edit payload: id={payload.id}, name='{payload.name}'");
+
+        var response = await _request.PostAsync(
+            $"/api/budget/{budgetId}/edit",
+            new() { DataObject = payload }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 3] Edit budget HTTP Status: {status}");
+        Console.WriteLine($"[Test 3] Edit budget Body: {body}");
+
+        Assert.That(status == 401 || status == 403,
+            $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
+    }
+
 }
