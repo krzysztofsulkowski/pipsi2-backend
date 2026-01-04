@@ -69,4 +69,39 @@ public class HistoryLogApiTests : BudgetApiTestBase
         Assert.That(status == 403, $"Expected 403, got {status}\n{body}");
     }
 
+    // Get history logs should return 200 when user is admin
+    [Test]
+    public async Task HistoryLog_GetHistoryLogs_Should_Return_200_For_Admin()
+    {
+        var adminRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "[HistoryLog Test 3 - Admin]"
+        );
+
+        var response = await adminRequest.PostAsync("/api/historyLog/get-history-logs", new APIRequestContextOptions
+        {
+            DataObject = new
+            {
+                draw = 1,
+                start = 0,
+                length = 10,
+                searchValue = "",
+                orderColumn = 0,
+                orderDir = "asc",
+                extraFilters = new { }
+            }
+        });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[HistoryLog Test 3 - Admin] HTTP Status: " + status);
+        Console.WriteLine("[HistoryLog Test 3 - Admin] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+    }
+
+
 }
