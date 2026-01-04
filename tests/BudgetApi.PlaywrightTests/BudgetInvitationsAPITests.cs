@@ -91,6 +91,25 @@ public class BudgetInvitationsAPITests : BudgetApiTestBase
             $"Expected 200/204 when sending invitation as owner, got HTTP {status}\n{body}");
     }
 
+    // Test 3(BudgetInvitations): Accept invitation should return 400 when token is invalid
+    [Test]
+    public async Task Budget_AcceptInvitation_Should_Return_400_When_Token_Is_Invalid()
+    {
+        Console.WriteLine("[Test 3] Start: accept invitation with invalid token");
+
+        var invalidToken = Guid.NewGuid().ToString();
+
+        var response = await _request.GetAsync($"/api/budget/accept-invitation?token={invalidToken}");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 3] Accept-invitation HTTP Status: {status}");
+        Console.WriteLine($"[Test 3] Accept-invitation Body: {body}");
+
+        Assert.That(status == 400,
+            $"Expected 400 when token is invalid, got HTTP {status}\n{body}");
+    }
 
 
 }
