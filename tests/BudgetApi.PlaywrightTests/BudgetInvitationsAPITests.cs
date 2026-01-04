@@ -111,5 +111,23 @@ public class BudgetInvitationsAPITests : BudgetApiTestBase
             $"Expected 400 when token is invalid, got HTTP {status}\n{body}");
     }
 
+    // Test 4(BudgetInvitations): Accept invitation should return 400 when token is missing
+    [Test]
+    public async Task Budget_AcceptInvitation_Should_Return_400_When_Token_Is_Missing()
+    {
+        Console.WriteLine("[Test 4] Start: accept invitation WITHOUT token query param");
+
+        var response = await _request.GetAsync("/api/budget/accept-invitation");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 4] Accept-invitation HTTP Status: {status}");
+        Console.WriteLine($"[Test 4] Accept-invitation Body: {body}");
+
+        Assert.That(status == 400,
+            $"Expected 400 when token is missing, got HTTP {status}\n{body}");
+    }
+
 
 }
