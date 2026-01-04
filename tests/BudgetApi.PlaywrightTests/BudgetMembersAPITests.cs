@@ -163,4 +163,87 @@ public class BudgetMembersAPITests : BudgetApiTestBase
             $"Expected 403 or masked not-found (400 Error Budget.NotFound) when removing member without access, got HTTP {status}\n{body}");
     }
 
+    // Test 4(BudgetMembers): Removing invited (but not yet accepted) user should return 400 MemberNotFound
+    [Test]
+    public async Task Budget_RemoveMember_Should_Return_400_When_Target_Is_Not_A_Member()
+    {
+        Console.WriteLine("[Test 4] Start: owner creates budget, sends invitation, then tries to remove invited user (not a member yet)");
+
+        var authOwner = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "Members Test 4A"
+        );
+
+        var budgetName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authOwner.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = budgetName } }
+        );
+
+        Assert.That(createResponse.Status == 200, "Create budget failed");
+
+        var listResponse = await authOwner.GetAsync("/api/budget/my-budgets");
+        Assert.That(listResponse.Status == 200, "My-budgets failed");
+
+        var listBody = await listResponse.TextAsync();
+        var budgetId = FindBudgetIdByName(listBody, budgetName);
+
+        Assert.That(budgetId > 0, "Budget not found");
+
+        var recipientEmail = Environment.GetEnvironmentVariable("TEST_USER2_EMAIL");
+        Assert.That(string.IsNullOrWhiteSpace(recipientEmail) == false, "TEST_USER2_EMAIL is missing");
+
+        var inviteResponse = await authOwner.PostAsync(
+            "/api/budget/send-invitation",
+            new()
+            {
+                DataObject = new
+                {
+                    recipientEmail = recipientEmail,
+                    budgetName = budgetName,
+                    budgetId = budgetId
+                }
+            }
+        );
+
+        Assert.That(inviteResponse.Status == 200 || inviteResponse.Status == 204,
+            $"Send invitation failed, got HTTP {inviteResponse.Status}\n{await inviteResponse.TextAsync()}");
+
+        var membersResponse = await authOwner.GetAsync($"/api/budget/{budgetId}/members");
+        Assert.That(membersResponse.Status == 200, "Get members failed");
+
+        var membersBody = await membersResponse.TextAsync();
+
+        string? invitedUserId = null;
+
+        using (var doc = System.Text.Json.JsonDocument.Parse(membersBody))
+        {
+            foreach (var m in doc.RootElement.EnumerateArray())
+            {
+                var user = m.TryGetProperty("user", out var userEl) ? userEl.GetString() : null;
+                if (user == "balancrtestuser2")
+                {
+                    invitedUserId = m.TryGetProperty("userId", out var idEl) ? idEl.GetString() : null;
+                    break;
+                }
+            }
+        }
+
+        Assert.That(string.IsNullOrWhiteSpace(invitedUserId) == false,
+            $"Invited user not found in members list\n{membersBody}");
+
+        var deleteResponse = await authOwner.DeleteAsync($"/api/budget/{budgetId}/members/{invitedUserId}");
+
+        var status = deleteResponse.Status;
+        var body = await deleteResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] DELETE invited user status: {status}");
+        Console.WriteLine($"[Test 4] DELETE invited user body: {body}");
+
+        Assert.That(status == 400 && body.Contains("Error Budget.MemberNotFound"),
+            $"Expected 400 Error Budget.MemberNotFound when target is not a member yet, got HTTP {status}\n{body}");
+    }
+
 }
