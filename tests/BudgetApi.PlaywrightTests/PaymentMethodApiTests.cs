@@ -101,4 +101,27 @@ public class PaymentMethodApiTests : BudgetApiTestBase
         Assert.That(status == 401 || status == 403, $"Expected 401 or 403, got {status}\n{body}");
     }
 
+    // Get payment frequencies dictionary should return 200 when user is authenticated
+    [Test]
+    public async Task Frequencies_Should_Return_200_When_Authorized()
+    {
+        var authRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "[PaymentMethod Test 5]"
+        );
+
+        var response = await authRequest.GetAsync("/api/dictionaries/frequencies");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[PaymentMethod Test 5] HTTP Status: " + status);
+        Console.WriteLine("[PaymentMethod Test 5] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+        Assert.That(!string.IsNullOrWhiteSpace(body), "Response body is empty");
+    }
+
 }
