@@ -135,4 +135,34 @@ public class DashboardApiTests : BudgetApiTestBase
         );
     }
 
+    // Submit message should reject too long message (400 or 413)
+    [Test]
+    public async Task Dashboard_SubmitMessage_Should_Reject_When_Message_Is_Too_Long()
+    {
+        var longMessage = new string('a', 10000);
+
+        var response = await _request.PostAsync("/api/dashboard/submit-message", new APIRequestContextOptions
+        {
+            DataObject = new
+            {
+                name = "Test User",
+                email = "test@example.com",
+                message = longMessage
+            }
+        });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[Dashboard Test 6] HTTP Status: " + status);
+        Console.WriteLine("[Dashboard Test 6] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(
+            status == 400 || status == 413,
+            $"Expected 400 or 413, got {status}\n{body}"
+        );
+    }
+
+
 }
