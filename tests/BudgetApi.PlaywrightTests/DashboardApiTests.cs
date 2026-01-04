@@ -82,4 +82,30 @@ public class DashboardApiTests : BudgetApiTestBase
         );
     }
 
+    // Submit message should return 400 when message is missing
+    [Test]
+    public async Task Dashboard_SubmitMessage_Should_Return_400_When_Message_Is_Missing()
+    {
+        var response = await _request.PostAsync("/api/dashboard/submit-message", new APIRequestContextOptions
+        {
+            DataObject = new
+            {
+                name = "Test User",
+                email = "test@example.com"
+            }
+        });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[Dashboard Test 4] HTTP Status: " + status);
+        Console.WriteLine("[Dashboard Test 4] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(
+            status == 400,
+            $"Expected 400, got {status}\n{body}"
+        );
+    }
+
 }
