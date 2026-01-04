@@ -91,4 +91,42 @@ public class BudgetCreateAPITests : BudgetApiTestBase
             $"Expected 400 or 422 for empty name, got HTTP {statusEmpty}\n{bodyEmpty}");
     }
 
+    // Test 4(BudgetCreate): Create budget (valid name) should return 200/201 and created budget should appear in my-budgets
+    [Test, Order(4)]
+    public async Task Budget_Create_Should_Appear_In_MyBudgets_After_Create()
+    {
+        Console.WriteLine("[Test 4] Start: create budget with valid name, then verify it appears in my-budgets");
+
+        var authRequest = await CreateAuthorizedRequest("TEST_USER_EMAIL", "TEST_USER_PASSWORD", "Test 4");
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+        var createPayload = new { id = 0, name = createdName };
+
+        Console.WriteLine($"[Test 4] Create payload: {JsonSerializer.Serialize(createPayload)}");
+
+        var createResponse = await authRequest.PostAsync("/api/budget/create", new() { DataObject = createPayload });
+        var createStatus = createResponse.Status;
+        var createBody = await createResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] Create HTTP Status: {createStatus}");
+        Console.WriteLine($"[Test 4] Create Body: {createBody}");
+
+        Assert.That(createStatus == 200 || createStatus == 201,
+            $"Expected 200/201 when creating budget, got HTTP {createStatus}\n{createBody}");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listStatus = listResponse.Status;
+        var listBody = await listResponse.TextAsync();
+
+        Console.WriteLine($"[Test 4] My-budgets HTTP Status: {listStatus}");
+        Console.WriteLine($"[Test 4] My-budgets Body: {listBody}");
+
+        Assert.That(listStatus == 200,
+            $"Expected 200 from my-budgets after create, got HTTP {listStatus}\n{listBody}");
+
+        Assert.That(listBody.Contains(createdName),
+            $"Expected created budget name to appear in my-budgets, but it was not found.\n{listBody}");
+    }
+
+
 }
