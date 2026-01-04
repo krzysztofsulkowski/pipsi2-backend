@@ -84,4 +84,21 @@ public class PaymentMethodApiTests : BudgetApiTestBase
             Assert.That(name.ValueKind == JsonValueKind.String, "'name' is not a string");
         }
     }
+
+    // Get payment frequencies dictionary should return 401 or 403 when user is not authenticated
+    [Test]
+    public async Task Frequencies_Should_Return_401_Or_403_When_Unauthorized()
+    {
+        var response = await _request.GetAsync("/api/dictionaries/frequencies");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[PaymentMethod Test 4] HTTP Status: " + status);
+        Console.WriteLine("[PaymentMethod Test 4] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 401 || status == 403, $"Expected 401 or 403, got {status}\n{body}");
+    }
+
 }
