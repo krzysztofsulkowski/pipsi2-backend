@@ -108,4 +108,31 @@ public class DashboardApiTests : BudgetApiTestBase
         );
     }
 
+    // Submit message should return 400 when email format is invalid
+    [Test]
+    public async Task Dashboard_SubmitMessage_Should_Return_400_When_Email_Format_Is_Invalid()
+    {
+        var response = await _request.PostAsync("/api/dashboard/submit-message", new APIRequestContextOptions
+        {
+            DataObject = new
+            {
+                name = "Test User",
+                email = "invalid-email-format",
+                message = "Automated dashboard message"
+            }
+        });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[Dashboard Test 5] HTTP Status: " + status);
+        Console.WriteLine("[Dashboard Test 5] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(
+            status == 400,
+            $"Expected 400, got {status}\n{body}"
+        );
+    }
+
 }
