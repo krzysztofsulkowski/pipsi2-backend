@@ -131,4 +131,33 @@ public class BudgetEditAPITests : BudgetApiTestBase
             $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
     }
 
+    // Test 4(BudgetEdit): Edit budget should return 400 Budget.NotFound when budget does not exist (authenticated user)
+    [Test]
+    public async Task Budget_Edit_Should_Return_400_When_Budget_Does_Not_Exist()
+    {
+        Console.WriteLine("[Test 4] Start: edit non-existing budget WITH authentication");
+
+        var authRequest = await CreateAuthorizedRequest("TEST_USER_EMAIL", "TEST_USER_PASSWORD", "Test 4");
+
+        var nonExistingBudgetId = 999999;
+
+        var payload = new { id = nonExistingBudgetId, name = $"Updated budget {Guid.NewGuid()}" };
+
+        Console.WriteLine($"[Test 4] Edit payload: {System.Text.Json.JsonSerializer.Serialize(payload)}");
+
+        var response = await authRequest.PostAsync(
+            $"/api/budget/{nonExistingBudgetId}/edit",
+            new() { DataObject = payload }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 4] Edit budget HTTP Status: {status}");
+        Console.WriteLine($"[Test 4] Edit budget Body: {body}");
+
+        Assert.That(status == 400 && body.Contains("Error Budget.NotFound"),
+            $"Expected 400 Budget.NotFound for non-existing budget, got HTTP {status}\n{body}");
+    }
+
 }
