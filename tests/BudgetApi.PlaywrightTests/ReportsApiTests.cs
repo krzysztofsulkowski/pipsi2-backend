@@ -102,4 +102,27 @@ public class ReportsApiTests : BudgetApiTestBase
             Assert.That(userName.ValueKind == JsonValueKind.String || userName.ValueKind == JsonValueKind.Null);
         }
     }
+
+    // Get reports stats should return 400 when required year parameter is missing
+    [Test]
+    public async Task Reports_Stats_Should_Return_400_When_Year_Is_Missing()
+    {
+        var authRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "[Reports Test 4 - Missing Year]"
+        );
+
+        var response = await authRequest.GetAsync("/api/Reports/stats?month=1");
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[Reports Test 4 - Missing Year] HTTP Status: " + status);
+        Console.WriteLine("[Reports Test 4 - Missing Year] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 400, $"Expected 400, got {status}\n{body}");
+    }
+
 }
