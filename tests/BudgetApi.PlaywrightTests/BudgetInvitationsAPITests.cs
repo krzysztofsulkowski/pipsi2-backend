@@ -129,5 +129,59 @@ public class BudgetInvitationsAPITests : BudgetApiTestBase
             $"Expected 400 when token is missing, got HTTP {status}\n{body}");
     }
 
+    // Test 5(BudgetInvitation): Send invitation should return 400 when payload is invalid (missing required fields)
+    [Test]
+    public async Task Budget_SendInvitation_Should_Return_400_When_Payload_Is_Invalid()
+    {
+        Console.WriteLine("[Test 5] Start: send invitation with invalid payload (missing recipientEmail) as owner");
+
+        var authRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "Test 5"
+        );
+
+        var budgetName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = budgetName } }
+        );
+
+        Assert.That(createResponse.Status == 200, "Create budget failed");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        Assert.That(listResponse.Status == 200, "My-budgets failed");
+
+        var listBody = await listResponse.TextAsync();
+        var budgetId = FindBudgetIdByName(listBody, budgetName);
+
+        Assert.That(budgetId > 0, $"Created budget '{budgetName}' not found in my-budgets");
+
+        Console.WriteLine($"[Test 5] Created budgetId: {budgetId}");
+
+        var invalidPayload = new
+        {
+            budgetId = budgetId,
+            budgetName = budgetName
+        };
+
+        Console.WriteLine($"[Test 5] Send-invitation invalid payload: {System.Text.Json.JsonSerializer.Serialize(invalidPayload)}");
+
+        var response = await authRequest.PostAsync(
+            "/api/budget/send-invitation",
+            new() { DataObject = invalidPayload }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 5] Send-invitation HTTP Status: {status}");
+        Console.WriteLine($"[Test 5] Send-invitation Body: {body}");
+
+        Assert.That(status == 400,
+            $"Expected 400 when payload is invalid, got HTTP {status}\n{body}");
+    }
+
 
 }
