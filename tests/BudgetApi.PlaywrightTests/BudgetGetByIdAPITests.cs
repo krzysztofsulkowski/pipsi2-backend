@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -138,4 +139,59 @@ public class BudgetGetByIdAPITests : BudgetApiTestBase
         Assert.That(status == 400 && body.Contains("Error Budget.NotFound"),
             $"Expected 400 Budget.NotFound for non-existing budget, got HTTP {status}\n{body}");
     }
+
+    // Test 5(BudgetGetById): Get budget by id should return valid JSON body with id and name
+    [Test]
+    public async Task Budget_GetById_Should_Return_Valid_Budget_Details_When_Authorized()
+    {
+        Console.WriteLine("[Test 5] Start: create budget, then get it and validate response body");
+
+        var authRequest = await CreateAuthorizedRequest("TEST_USER_EMAIL", "TEST_USER_PASSWORD", "Test 5");
+
+        var createdName = $"Test budget {Guid.NewGuid()}";
+
+        var createResponse = await authRequest.PostAsync(
+            "/api/budget/create",
+            new() { DataObject = new { id = 0, name = createdName } }
+        );
+
+        Assert.That(createResponse.Status == 200, "Create budget failed");
+
+        var listResponse = await authRequest.GetAsync("/api/budget/my-budgets");
+        var listBody = await listResponse.TextAsync();
+
+        var budgetId = FindBudgetIdByName(listBody, createdName);
+        Assert.That(budgetId > 0, "Created budget not found in my-budgets");
+
+        Console.WriteLine($"[Test 5] Created budgetId: {budgetId}");
+
+        var response = await authRequest.GetAsync($"/api/budget/{budgetId}");
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[Test 5] Get budget HTTP Status: {status}");
+        Console.WriteLine($"[Test 5] Get budget Body: {body}");
+
+        Assert.That(status == 200, $"Expected 200, got {status}");
+        Assert.That(string.IsNullOrWhiteSpace(body) == false, "Response body is empty");
+
+        using var json = JsonDocument.Parse(body);
+
+        Assert.That(json.RootElement.TryGetProperty("id", out var idProp),
+            "Response JSON does not contain 'id'");
+        Assert.That(json.RootElement.TryGetProperty("name", out var nameProp),
+            "Response JSON does not contain 'name'");
+
+        var returnedId = idProp.GetInt32();
+        var returnedName = nameProp.GetString();
+
+        Console.WriteLine($"[Test 5] Returned id: {returnedId}");
+        Console.WriteLine($"[Test 5] Returned name: {returnedName}");
+
+        Assert.That(returnedId == budgetId,
+            $"Expected id {budgetId}, got {returnedId}");
+        Assert.That(string.IsNullOrWhiteSpace(returnedName) == false,
+            "Returned name is null or empty");
+    }
+
 }
