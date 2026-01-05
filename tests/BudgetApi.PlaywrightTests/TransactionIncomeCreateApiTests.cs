@@ -323,5 +323,51 @@ public class TransactionIncomeCreateApiTests : BudgetApiTestBase
         Assert.That(status == 401 || status == 403, $"Expected 401 or 403, got {status}\n{body}");
     }
 
+    // Test 7 (IncomeCreate): Create income should return 400 when amount is zero
+    [Test]
+    public async Task Income_Create_Should_Return_400_When_Amount_Is_Zero()
+    {
+        var testLabel = "[Income Create Test 7 - Amount Zero]";
+
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var myBudgetsResponse = await authorizedRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        int budgetId;
+        using (var doc = JsonDocument.Parse(myBudgetsBody))
+        {
+            var arr = doc.RootElement;
+            Assert.That(arr.ValueKind == JsonValueKind.Array);
+            Assert.That(arr.GetArrayLength() > 0);
+            budgetId = arr[0].GetProperty("id").GetInt32();
+        }
+
+        Assert.That(budgetId > 0);
+
+        var bodyZeroAmount = new
+        {
+            description = "api_test_income_zero_amount",
+            amount = 0,
+            date = DateTime.UtcNow.ToString("O")
+        };
+
+        var response = await authorizedRequest.PostAsync(
+            $"/api/budget/{budgetId}/income",
+            new() { DataObject = bodyZeroAmount }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} HTTP Status: {status}");
+        System.Console.WriteLine($"{testLabel} Response Body: {body}");
+
+        Assert.That(status == 400, $"Expected 400, got {status}\n{body}");
+    }
 
 }
