@@ -107,4 +107,58 @@ public class TransactionIncomeCreateApiTests : BudgetApiTestBase
         Assert.That(status == 400, $"Expected 400, got {status}\n{body}");
     }
 
+    // Test 3 (IncomeCreate): Create income should return 200 when request is valid
+    [Test]
+    public async Task Income_Create_Should_Return_200_When_Request_Is_Valid()
+    {
+        var testLabel = "[Income Create Test 3 - Valid Body]";
+
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var myBudgetsResponse = await authorizedRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsStatus = myBudgetsResponse.Status;
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} My-budgets HTTP Status: {myBudgetsStatus}");
+        System.Console.WriteLine($"{testLabel} My-budgets Body: {myBudgetsBody}");
+
+        Assert.That(myBudgetsStatus == 200);
+
+        int budgetId;
+        using (var doc = JsonDocument.Parse(myBudgetsBody))
+        {
+            var arr = doc.RootElement;
+            Assert.That(arr.ValueKind == JsonValueKind.Array);
+            Assert.That(arr.GetArrayLength() > 0);
+            budgetId = arr[0].GetProperty("id").GetInt32();
+        }
+
+        Assert.That(budgetId > 0);
+
+        var validBody = new
+        {
+            description = "api_test_income_" + Guid.NewGuid().ToString("N"),
+            amount = 123.45,
+            date = DateTime.UtcNow.ToString("O")
+        };
+
+        var response = await authorizedRequest.PostAsync(
+            $"/api/budget/{budgetId}/income",
+            new() { DataObject = validBody }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} HTTP Status: {status}");
+        System.Console.WriteLine($"{testLabel} Response Body: {body}");
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+    }
+
+
 }
