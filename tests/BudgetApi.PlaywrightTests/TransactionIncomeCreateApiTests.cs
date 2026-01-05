@@ -200,6 +200,128 @@ public class TransactionIncomeCreateApiTests : BudgetApiTestBase
         Assert.That(type == "Error Transaction.NoAccess", $"Expected type 'Error Transaction.NoAccess', got '{type}'\n{body}");
     }
 
+    // Test 5 (IncomeCreate): Create income should return 400 (NoAccess) when normal user tries to create income in admin's budget
+    [Test]
+    public async Task Income_Create_Should_Return_400_When_User2_Tries_To_Create_In_Admin_Budget()
+    {
+        var testLabel = "[Income Create Test 5 - User2 NoAccess]";
+
+        var adminRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var myBudgetsResponse = await adminRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsStatus = myBudgetsResponse.Status;
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} Admin my-budgets HTTP Status: {myBudgetsStatus}");
+        System.Console.WriteLine($"{testLabel} Admin my-budgets Body: {myBudgetsBody}");
+
+        Assert.That(myBudgetsStatus == 200);
+
+        int adminBudgetId;
+        using (var doc = JsonDocument.Parse(myBudgetsBody))
+        {
+            var arr = doc.RootElement;
+            Assert.That(arr.ValueKind == JsonValueKind.Array);
+            Assert.That(arr.GetArrayLength() > 0);
+            adminBudgetId = arr[0].GetProperty("id").GetInt32();
+        }
+
+        Assert.That(adminBudgetId > 0);
+
+        var user2Request = await CreateAuthorizedRequest(
+            "TEST_USER2_EMAIL",
+            "TEST_USER2_PASSWORD",
+            testLabel
+        );
+
+        var validBody = new
+        {
+            description = "api_test_income_user2_no_access_" + Guid.NewGuid().ToString("N"),
+            amount = 77.77,
+            date = DateTime.UtcNow.ToString("O")
+        };
+
+        var response = await user2Request.PostAsync(
+            $"/api/budget/{adminBudgetId}/income",
+            new() { DataObject = validBody }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} HTTP Status: {status}");
+        System.Console.WriteLine($"{testLabel} Response Body: {body}");
+
+        Assert.That(status == 400, $"Expected 400, got {status}\n{body}");
+
+        using var errorDoc = JsonDocument.Parse(body);
+        var type = errorDoc.RootElement.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : null;
+
+        Assert.That(type == "Error Transaction.NoAccess", $"Expected type 'Error Transaction.NoAccess', got '{type}'\n{body}");
+    }
+
+    // Test 6 (IncomeCreate): Create income should return 401/403 when token is missing or invalid
+    [Test]
+    public async Task Income_Create_Should_Return_401_Or_403_When_Token_Is_Invalid()
+    {
+        var testLabel = "[Income Create Test 6 - Invalid Token]";
+
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var myBudgetsResponse = await authorizedRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        int budgetId;
+        using (var doc = JsonDocument.Parse(myBudgetsBody))
+        {
+            var arr = doc.RootElement;
+            Assert.That(arr.ValueKind == JsonValueKind.Array);
+            Assert.That(arr.GetArrayLength() > 0);
+            budgetId = arr[0].GetProperty("id").GetInt32();
+        }
+
+        Assert.That(budgetId > 0);
+
+        var invalidTokenRequest = await _playwright.APIRequest.NewContextAsync(new()
+        {
+            BaseURL = _baseUrl,
+            IgnoreHTTPSErrors = true,
+            ExtraHTTPHeaders = new Dictionary<string, string>
+        {
+            { "Accept", "application/json" },
+            { "Content-Type", "application/json" },
+            { "Authorization", "Bearer invalid.token.value" }
+        }
+        });
+
+        var validBody = new
+        {
+            description = "api_test_income_invalid_token",
+            amount = 10.00,
+            date = DateTime.UtcNow.ToString("O")
+        };
+
+        var response = await invalidTokenRequest.PostAsync(
+            $"/api/budget/{budgetId}/income",
+            new() { DataObject = validBody }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} HTTP Status: {status}");
+        System.Console.WriteLine($"{testLabel} Response Body: {body}");
+
+        Assert.That(status == 401 || status == 403, $"Expected 401 or 403, got {status}\n{body}");
+    }
 
 
 }
