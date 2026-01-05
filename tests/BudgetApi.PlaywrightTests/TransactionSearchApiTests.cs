@@ -40,8 +40,7 @@ public class TransactionSearchApiTests : BudgetApiTestBase
             $"Expected 401 or 403 when unauthorized, got HTTP {status}\n{body}");
     }
 
-    // Test 2 (TransactionSearch): Search transactions should return 200 and valid table structure
-    // when authorized user sends a correct search request for an existing budget.
+    // Test 2 (TransactionSearch): Search transactions should return 200 and valid table structure when authorized user sends a correct search request for an existing budget.
     [Test]
     public async Task Transaction_Search_Should_Return_200_When_Request_Is_Valid()
     {
@@ -88,6 +87,41 @@ public class TransactionSearchApiTests : BudgetApiTestBase
         Assert.That(json.RootElement.TryGetProperty("data", out _), "Missing data property");
         Assert.That(json.RootElement.TryGetProperty("recordsTotal", out _), "Missing recordsTotal property");
         Assert.That(json.RootElement.TryGetProperty("recordsFiltered", out _), "Missing recordsFiltered property");
+    }
+
+    // Test 3 (TransactionSearch): Search transactions should return 401 or 403 when request is sent without authorization token.
+    [Test]
+    public async Task Transaction_Search_Should_Return_401_Or_403_When_Unauthorized()
+    {
+        var testLabel = "Transaction Search Test 3 - Unauthorized";
+
+        var budgetId = 1;
+
+        var response = await _request.PostAsync(
+            $"/api/budget/{budgetId}/transactions/search",
+            new()
+            {
+                DataObject = new
+                {
+                    draw = 1,
+                    start = 0,
+                    length = 10,
+                    searchValue = "",
+                    orderColumn = 0,
+                    orderDir = "asc",
+                    extraFilters = new { }
+                }
+            }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[{testLabel}] HTTP Status: {status}");
+        Console.WriteLine($"[{testLabel}] Response Body: {body}");
+
+        Assert.That(status == 401 || status == 403,
+            $"Expected 401 or 403, got {status}\n{body}");
     }
 
 
