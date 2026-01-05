@@ -81,5 +81,45 @@ public class TransactionIncomeApiTests : BudgetApiTestBase
         Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
     }
 
+    // Create income should return 200 and may return empty body (current API behavior)
+    [Test]
+    public async Task Income_Create_Should_Return_200_Even_If_ResponseBody_Is_Empty()
+    {
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            "[Income Test 3 - Create Empty Body]"
+        );
+
+        var myBudgetsResponse = await authorizedRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        using var budgetsJson = JsonDocument.Parse(myBudgetsBody);
+        Assert.That(budgetsJson.RootElement.ValueKind == JsonValueKind.Array);
+        Assert.That(budgetsJson.RootElement.GetArrayLength() > 0);
+
+        var budgetId = budgetsJson.RootElement[0].GetProperty("id").GetInt32();
+        Assert.That(budgetId > 0);
+
+        var response = await authorizedRequest.PostAsync($"/api/budget/{budgetId}/income", new()
+        {
+            DataObject = new
+            {
+                description = "income create empty body",
+                amount = 11.11,
+                date = "2026-01-05T06:25:12.034Z"
+            }
+        });
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine("[Income Test 3 - Create Empty Body] HTTP Status: " + status);
+        Console.WriteLine("[Income Test 3 - Create Empty Body] Response Body:");
+        Console.WriteLine(body);
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+    }
+
 
 }
