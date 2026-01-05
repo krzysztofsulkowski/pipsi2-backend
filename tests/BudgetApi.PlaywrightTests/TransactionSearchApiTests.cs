@@ -216,4 +216,53 @@ public class TransactionSearchApiTests : BudgetApiTestBase
         Assert.That(status == 400, $"Expected 400, got {status}\n{body}");
     }
 
+    // Test 6 (TransactionSearch): Search transactions should return 200 and empty result when no data matches search criteria.
+    [Test]
+    public async Task Transaction_Search_Should_Return_200_And_Empty_Result_When_No_Match()
+    {
+        var testLabel = "Transaction Search Test 6 - No Match";
+
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var myBudgetsResponse = await authorizedRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        using var budgetsJson = JsonDocument.Parse(myBudgetsBody);
+        var budgetId = budgetsJson.RootElement[0].GetProperty("id").GetInt32();
+
+        var response = await authorizedRequest.PostAsync(
+            $"/api/budget/{budgetId}/transactions/search",
+            new()
+            {
+                DataObject = new
+                {
+                    draw = 1,
+                    start = 0,
+                    length = 10,
+                    searchValue = "___NO_MATCH___",
+                    orderColumn = 0,
+                    orderDir = "asc",
+                    extraFilters = new { }
+                }
+            }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[{testLabel}] HTTP Status: {status}");
+        Console.WriteLine($"[{testLabel}] Response Body: {body}");
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+
+        using var json = JsonDocument.Parse(body);
+        var data = json.RootElement.GetProperty("data");
+
+        Assert.That(data.GetArrayLength() == 0, "Expected empty data array");
+    }
+
 }
