@@ -124,5 +124,58 @@ public class TransactionSearchApiTests : BudgetApiTestBase
             $"Expected 401 or 403, got {status}\n{body}");
     }
 
+    // Test 4 (TransactionSearch): Authorized user should be able to search transactions and receive 200 response.
+    [Test]
+    public async Task Transaction_Search_Should_Return_200_When_Authorized()
+    {
+        var testLabel = "Transaction Search Test 4 - Authorized";
+
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var myBudgetsResponse = await authorizedRequest.GetAsync("/api/budget/my-budgets");
+        var myBudgetsStatus = myBudgetsResponse.Status;
+        var myBudgetsBody = await myBudgetsResponse.TextAsync();
+
+        Console.WriteLine($"[{testLabel}] My-budgets HTTP Status: {myBudgetsStatus}");
+        Console.WriteLine($"[{testLabel}] My-budgets Body: {myBudgetsBody}");
+
+        Assert.That(myBudgetsStatus == 200, $"Expected 200 for my-budgets, got {myBudgetsStatus}\n{myBudgetsBody}");
+
+        using var budgetsJson = JsonDocument.Parse(myBudgetsBody);
+        Assert.That(budgetsJson.RootElement.ValueKind == JsonValueKind.Array, "My-budgets should return JSON array");
+        Assert.That(budgetsJson.RootElement.GetArrayLength() > 0, "My-budgets returned empty array");
+
+        var budgetId = budgetsJson.RootElement[0].GetProperty("id").GetInt32();
+        Assert.That(budgetId > 0, "Budget id should be > 0");
+
+        var response = await authorizedRequest.PostAsync(
+            $"/api/budget/{budgetId}/transactions/search",
+            new()
+            {
+                DataObject = new
+                {
+                    draw = 1,
+                    start = 0,
+                    length = 10,
+                    searchValue = "",
+                    orderColumn = 0,
+                    orderDir = "asc",
+                    extraFilters = new { }
+                }
+            }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        Console.WriteLine($"[{testLabel}] Search HTTP Status: {status}");
+        Console.WriteLine($"[{testLabel}] Search Response Body: {body}");
+
+        Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
+    }
 
 }
