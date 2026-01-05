@@ -160,5 +160,46 @@ public class TransactionIncomeCreateApiTests : BudgetApiTestBase
         Assert.That(status == 200, $"Expected 200, got {status}\n{body}");
     }
 
+    // Test 4 (IncomeCreate): Create income should return 400 (NoAccess) when budgetId is not accessible/non-existing
+    [Test]
+    public async Task Income_Create_Should_Return_400_When_Budget_Is_Not_Accessible()
+    {
+        var testLabel = "[Income Create Test 4 - Budget Not Accessible]";
+
+        var authorizedRequest = await CreateAuthorizedRequest(
+            "TEST_USER_EMAIL",
+            "TEST_USER_PASSWORD",
+            testLabel
+        );
+
+        var notAccessibleBudgetId = 99999999;
+
+        var validBody = new
+        {
+            description = "api_test_income_no_access",
+            amount = 50.00,
+            date = DateTime.UtcNow.ToString("O")
+        };
+
+        var response = await authorizedRequest.PostAsync(
+            $"/api/budget/{notAccessibleBudgetId}/income",
+            new() { DataObject = validBody }
+        );
+
+        var status = response.Status;
+        var body = await response.TextAsync();
+
+        System.Console.WriteLine($"{testLabel} HTTP Status: {status}");
+        System.Console.WriteLine($"{testLabel} Response Body: {body}");
+
+        Assert.That(status == 400, $"Expected 400, got {status}\n{body}");
+
+        using var doc = JsonDocument.Parse(body);
+        var type = doc.RootElement.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : null;
+
+        Assert.That(type == "Error Transaction.NoAccess", $"Expected type 'Error Transaction.NoAccess', got '{type}'\n{body}");
+    }
+
+
 
 }
