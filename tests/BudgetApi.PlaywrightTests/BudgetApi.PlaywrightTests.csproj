@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Remove="FileName.cs" />
+    <Compile Remove="GetAllUsersAPITests.cs" />
     <Compile Remove="TransactionIncomeApiTests.cs" />
   </ItemGroup>
 
