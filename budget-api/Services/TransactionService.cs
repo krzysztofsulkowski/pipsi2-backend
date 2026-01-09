@@ -341,10 +341,26 @@ namespace budget_api.Services
                 if (!string.IsNullOrEmpty(request.SearchValue))
                 {
                     var sv = request.SearchValue.ToLower();
+                    var categoryIds = await _context.Categories
+                        .Where(c => c.Name.ToLower().Contains(sv))
+                        .Select(c => c.Id)
+                        .ToListAsync();
+                    
+                    var paymentMethodStrings = new[] { "cash", "card", "blik", "transfer", "other" };
+                    var matchingPaymentMethods = new List<PaymentMethod>();
+                    if (paymentMethodStrings.Any(pm => pm.Contains(sv)))
+                    {
+                        if ("cash".Contains(sv)) matchingPaymentMethods.Add(PaymentMethod.Cash);
+                        if ("card".Contains(sv)) matchingPaymentMethods.Add(PaymentMethod.Card);
+                        if ("blik".Contains(sv)) matchingPaymentMethods.Add(PaymentMethod.Blik);
+                        if ("transfer".Contains(sv)) matchingPaymentMethods.Add(PaymentMethod.Transfer);
+                        if ("other".Contains(sv)) matchingPaymentMethods.Add(PaymentMethod.Other);
+                    }
+                    
                     baseQuery = baseQuery.Where(t =>
                         (t.Title != null && t.Title.ToLower().Contains(sv)) ||
-                        (t.Category != null && t.Category.Name.ToLower().Contains(sv)) ||
-                        (t.PaymentMethod != null && t.PaymentMethod.ToString().ToLower().Contains(sv))
+                        (t.CategoryId != null && categoryIds.Contains(t.CategoryId.Value)) ||
+                        (t.PaymentMethod.HasValue && matchingPaymentMethods.Contains(t.PaymentMethod.Value))
                     );
                 }
 
