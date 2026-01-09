@@ -6,7 +6,7 @@ namespace budget_api.Services.Interfaces
 {
     public interface ITransactionService
     {
-        Task<ServiceResult> AddIncomeAsync(int budgetId, CreateIncomeDto model, string userId);
+        Task<ServiceResult<TransactionDetailsDto>> AddIncomeAsync(int budgetId, CreateIncomeDto model, string userId);
         Task<ServiceResult<TransactionDetailsDto>> GetIncomeDetailsAsync(int budgetId, int incomeId, string userId);
         Task<ServiceResult> EditIncomeAsync(int budgetId, int incomeId, CreateIncomeDto model, string userId);
         Task<ServiceResult> DeleteIncomeAsync(int budgetId, int incomeId, string userId);
