@@ -24,13 +24,13 @@ namespace budget_api.Controllers
         private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         /// <summary>
-        /// Dodaje nowy przychÛd do wskazanego budøetu.
+        /// Dodaje nowy przych√≥d do wskazanego bud≈ºetu.
         /// </summary>
-        /// <param name="budgetId">ID budøetu, do ktÛrego dodajemy przychÛd.</param>
-        /// <param name="model">Dane nowego przychodu (kwota, tytu≥, kategoria).</param>
+        /// <param name="budgetId">ID bud≈ºetu, do kt√≥rego dodajemy przych√≥d.</param>
+        /// <param name="model">Dane nowego przychodu (kwota, tytu≈Ç, kategoria).</param>
         /// <returns>Status operacji.</returns>
         [HttpPost("income")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(TransactionDetailsDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)] 
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> AddIncome([FromRoute] int budgetId, [FromBody] CreateIncomeDto model)
@@ -46,12 +46,12 @@ namespace budget_api.Controllers
         /// Wyszukuje transakcje (przychody i wydatki) w formacie tabelarycznym (Server-side rendering).
         /// </summary>
         /// <remarks>
-        /// Obs≥uguje paginacjÍ, sortowanie po kolumnach i wyszukiwanie tekstowe.
-        /// Zwraca zarÛwno przychody, jak i wydatki.
+        /// Obs≈Çuguje paginacjƒô, sortowanie po kolumnach i wyszukiwanie tekstowe.
+        /// Zwraca zar√≥wno przychody, jak i wydatki.
         /// </remarks>
-        /// <param name="budgetId">ID budøetu.</param>
+        /// <param name="budgetId">ID bud≈ºetu.</param>
         /// <param name="request">Parametry tabeli (Start, Length, Search, Order).</param>
-        /// <returns>Obiekt z listπ transakcji i metadanymi dla tabeli.</returns>
+        /// <returns>Obiekt z listƒÖ transakcji i metadanymi dla tabeli.</returns>
         [HttpPost("transactions/search")]
         [ProducesResponseType(typeof(DataTableResponse<TransactionListItemDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -64,11 +64,11 @@ namespace budget_api.Controllers
         }
 
         /// <summary>
-        /// Pobiera szczegÛ≥y pojedynczego przychodu.
+        /// Pobiera szczeg√≥≈Çy pojedynczego przychodu.
         /// </summary>
-        /// <param name="budgetId">ID budøetu.</param>
+        /// <param name="budgetId">ID bud≈ºetu.</param>
         /// <param name="incomeId">ID transakcji (przychodu).</param>
-        /// <returns>SzczegÛ≥owe dane transakcji.</returns>
+        /// <returns>Szczeg√≥≈Çowe dane transakcji.</returns>
         [HttpGet("income/{incomeId:int}")]
         [ProducesResponseType(typeof(TransactionDetailsDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,9 +81,9 @@ namespace budget_api.Controllers
         }
 
         /// <summary>
-        /// Edytuje istniejπcy przychÛd.
+        /// Edytuje istniejƒÖcy przych√≥d.
         /// </summary>
-        /// <param name="budgetId">ID budøetu.</param>
+        /// <param name="budgetId">ID bud≈ºetu.</param>
         /// <param name="incomeId">ID przychodu do edycji.</param>
         /// <param name="model">Zaktualizowane dane.</param>
         [HttpPost("income/{incomeId:int}")]
@@ -99,10 +99,10 @@ namespace budget_api.Controllers
         }
 
         /// <summary>
-        /// Usuwa przychÛd z budøetu.
+        /// Usuwa przych√≥d z bud≈ºetu.
         /// </summary>
         /// <remarks>
-        /// Uwaga: UsuniÍcie przychodu wp≥ywa na ca≥kowite saldo budøetu.
+        /// Uwaga: Usuniƒôcie przychodu wp≈Çywa na ca≈Çkowite saldo bud≈ºetu.
         /// </remarks>
         [HttpDelete("income/{incomeId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -119,10 +119,10 @@ namespace budget_api.Controllers
         /// Dodaje nowy wydatek.
         /// </summary>
         /// <remarks>
-        /// Metoda weryfikuje, czy w budøecie sπ wystarczajπce úrodki. 
-        /// Jeúli `Amount` > Saldo, zwracany jest b≥πd 400 (Bad Request).
+        /// Metoda weryfikuje, czy w bud≈ºecie sƒÖ wystarczajƒÖce ≈õrodki. 
+        /// Je≈õli `Amount` > Saldo, zwracany jest b≈ÇƒÖd 400 (Bad Request).
         /// </remarks>
-        /// <param name="budgetId">ID budøetu.</param>
+        /// <param name="budgetId">ID bud≈ºetu.</param>
         /// <param name="model">Dane wydatku (typ: natychmiastowy/cykliczny/planowany).</param>
         [HttpPost("expenses")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -137,7 +137,7 @@ namespace budget_api.Controllers
         }
 
         /// <summary>
-        /// Pobiera szczegÛ≥y pojedynczego wydatku.
+        /// Pobiera szczeg√≥≈Çy pojedynczego wydatku.
         /// </summary>
         [HttpGet("expenses/{expenseId:int}")]
         [ProducesResponseType(typeof(TransactionDetailsDto), StatusCodes.Status200OK)]
@@ -151,10 +151,10 @@ namespace budget_api.Controllers
         }
 
         /// <summary>
-        /// Edytuje istniejπcy wydatek.
+        /// Edytuje istniejƒÖcy wydatek.
         /// </summary>
         /// <remarks>
-        /// RÛwnieø sprawdza saldo. Jeúli zwiÍkszenie kwoty wydatku spowodowa≥oby ujemny bilans, operacja zostanie odrzucona.
+        /// R√≥wnie≈º sprawdza saldo. Je≈õli zwiƒôkszenie kwoty wydatku spowodowa≈Çoby ujemny bilans, operacja zostanie odrzucona.
         /// </remarks>
         [HttpPost("expenses/{expenseId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -172,7 +172,7 @@ namespace budget_api.Controllers
         /// Usuwa wydatek z historii.
         /// </summary>
         /// <remarks>
-        /// UsuniÍcie wydatku zwraca úrodki do salda budøetu.
+        /// Usuniƒôcie wydatku zwraca ≈õrodki do salda bud≈ºetu.
         /// </remarks>
         [HttpDelete("expenses/{expenseId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -185,7 +185,7 @@ namespace budget_api.Controllers
             return HandleServiceResult(result);
         }
 
-        //[HttpGet("run-recurrent-job")]  //do testÛw
+        //[HttpGet("run-recurrent-job")]  //do test√≥w
         //public async Task<IActionResult> RunRecurrentJobTest() 
         //{
         //    var result = await _transactionService.ProcessRecurringAndPlannedExpensesAsync();

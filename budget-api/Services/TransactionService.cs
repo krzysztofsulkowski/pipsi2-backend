@@ -44,12 +44,12 @@ namespace budget_api.Services
             return incomes - expenses;
         }
 
-        public async Task<ServiceResult> AddIncomeAsync(int budgetId, CreateIncomeDto model, string userId)
+        public async Task<ServiceResult<TransactionDetailsDto>> AddIncomeAsync(int budgetId, CreateIncomeDto model, string userId)
         {
             try
             {
                 if (!await UserIsMemberAsync(budgetId, userId))
-                    return ServiceResult.Failure(TransactionErrors.NoAccess());
+                    return ServiceResult<TransactionDetailsDto>.Failure(TransactionErrors.NoAccess());
 
                 var tx = new BudgetTransaction
                 {
@@ -64,12 +64,29 @@ namespace budget_api.Services
 
                 await _context.BudgetTransactions.AddAsync(tx);
                 await _context.SaveChangesAsync();
-                return ServiceResult.Success();
+
+                return ServiceResult<TransactionDetailsDto>.Success(new TransactionDetailsDto
+                {
+                    Id = tx.Id,
+                    BudgetId = tx.BudgetId,
+                    Title = tx.Title,
+                    Description = tx.Title,
+                    Amount = tx.Amount,
+                    Date = tx.Date,
+                    Type = tx.Type,
+                    CategoryId = tx.CategoryId,
+                    CategoryName = tx.Category?.Name,
+                    PaymentMethod = tx.PaymentMethod,
+                    Status = tx.Status,
+                    ReceiptImageUrl = tx.ReceiptImageUrl,
+                    Frequency = tx.Frequency,
+                    EndDate = tx.EndDate
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd dodawania przychodu: Budżet {BudgetId}", budgetId);
-                return ServiceResult.Failure(CommonErrors.CreateFailed(IncomeObj));
+                return ServiceResult<TransactionDetailsDto>.Failure(CommonErrors.CreateFailed(IncomeObj));
             }
         }
 
