@@ -386,7 +386,7 @@ namespace budget_api.Services
             }
         }
 
-        public async Task<ServiceResult<List<TransactionListItemDto>>> GetTransactionsForStatsAsync(int budgetId, int year, int month)
+        public async Task<ServiceResult<List<TransactionListItemDto>>> GetTransactionsForStatsAsync(int budgetId, int? year, int month)
         {
             try
             {
