@@ -2,6 +2,7 @@
 using budget_api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace budget_api.Controllers
 {
@@ -31,7 +32,7 @@ namespace budget_api.Controllers
         [HttpGet("stats")]
         [ProducesResponseType(typeof(List<TransactionListItemDto>), StatusCodes.Status200OK)] 
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetStats([FromQuery] int year, [FromQuery] int month, [FromQuery] int? budgetId)
+        public async Task<IActionResult> GetStats([FromQuery, Required(ErrorMessage = "Pole rok jest wymagane.")] int? year, [FromQuery] int month, [FromQuery] int? budgetId)
         {
 
             int finalBudgetId = budgetId ?? 0;
